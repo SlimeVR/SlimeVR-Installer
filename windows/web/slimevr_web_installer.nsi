@@ -65,9 +65,12 @@ Function ${un}cleanInstDir
     Delete "$INSTDIR\firewall.bat"
     Delete "$INSTDIR\MagnetoLib.dll"
     Delete "$INSTDIR\steamvr.ps1"
+    Delete "$INSTDIR\log*"
+    Delete "$INSTDIR\vrconfig.yml"
 
     RMdir /r "$INSTDIR\jre"
     RMdir /r "$INSTDIR\driver"
+    RMDir /r "$INSTDIR\logs"
 
     RMDir $INSTDIR
 FunctionEnd
