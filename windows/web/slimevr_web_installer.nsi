@@ -56,6 +56,26 @@ Function .onGUIEnd
     RMDir /r "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.12_7"
 FunctionEnd
 
+!macro cleanInstDir un
+Function ${un}cleanInstDir
+    Delete "$INSTDIR\uninstall.exe"
+    Delete "$INSTDIR\run.bat"
+    Delete "$INSTDIR\run.ico"
+    Delete "$INSTDIR\slimevr.jar"
+    Delete "$INSTDIR\firewall.bat"
+    Delete "$INSTDIR\MagnetoLib.dll"
+    Delete "$INSTDIR\steamvr.ps1"
+
+    RMdir /r "$INSTDIR\jre"
+    RMdir /r "$INSTDIR\driver"
+
+    RMDir $INSTDIR
+FunctionEnd
+!macroend
+
+!insertmacro cleanInstDir ""
+!insertmacro cleanInstDir "un."
+
 # InstFiles section start
 Section
     Var /GLOBAL DownloadedJreFile
@@ -103,20 +123,15 @@ Section
     SetOutPath $INSTDIR
 
     DetailPrint "Copying SlimeVR Server and SlimeVR Driver to installation folder..."
-    CopyFiles "$TEMP\SlimeVR\SlimeVR\*" $INSTDIR
-    Rename "$TEMP\slimevr-openvr-driver-win64\slimevr" "$INSTDIR\driver"
-    Rename "$TEMP\$DownloadedJreFile\jdk-11.0.12+7-jre" "$INSTDIR\jre"
+    CopyFiles /SILENT "$TEMP\SlimeVR\SlimeVR\*" $INSTDIR
+    CopyFiles /SILENT "$TEMP\slimevr-openvr-driver-win64\slimevr\*" "$INSTDIR\driver"
+    CopyFiles /SILENT "$TEMP\$DownloadedJreFile\jdk-11.0.12+7-jre\*" "$INSTDIR\jre"
 
     # Include modified run.bat that will run bundled JRE
     File "run.bat"
     File "run.ico"
     # Include SteamVR powershell script to register/unregister driver
     File "steamvr.ps1"
-
-    # Point the new shortcut at the program uninstaller
-    DetailPrint "Creating shortcuts..."
-    CreateShortcut "$SMPROGRAMS\Run SlimeVR Server.lnk" "$INSTDIR\run.bat" "" "$INSTDIR\run.ico"
-    CreateShortcut "$DESKTOP\Run SlimeVR Server.lnk" "$INSTDIR\run.bat" "" "$INSTDIR\run.ico"
 
     DetailPrint "Registering SlimeVR Driver..."
     ${If} ${RunningX64}
@@ -125,8 +140,22 @@ Section
         ExecWait "powershell -ExecutionPolicy Bypass -File $\"$INSTDIR\steamvr.ps1$\" $\"$SteamPath$\" $\"$INSTDIR\driver$\" $\"adddriver$\" $\"win32$\"" $0
     ${EndIf}
     ${If} $0 != 0
+        Call cleanInstDir
         Abort "Failed to register SlimeVR Driver. Make sure you have SteamVR installed."
     ${EndIf}
+
+    # Point the new shortcut at the program uninstaller
+    DetailPrint "Creating shortcuts..."
+    CreateShortcut "$SMPROGRAMS\Uninstall SlimeVR Server.lnk" "$INSTDIR\uninstall.exe"
+    CreateShortcut "$SMPROGRAMS\Run SlimeVR Server.lnk" "$INSTDIR\run.bat" "" "$INSTDIR\run.ico"
+    CreateShortcut "$DESKTOP\Run SlimeVR Server.lnk" "$INSTDIR\run.bat" "" "$INSTDIR\run.ico"
+
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
+                    "DisplayName" "SlimeVR"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
+                    "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
+                    "DisplayIcon" "$\"$INSTDIR\run.ico$\""
 
     # Create the uninstaller
     WriteUninstaller "$INSTDIR\uninstall.exe"
@@ -144,10 +173,14 @@ Section "uninstall"
     ${EndIf}
 
     # Remove the shortcuts
+    Delete "$SMPROGRAMS\Uninstall SlimeVR Server.lnk"
     Delete "$SMPROGRAMS\Run SlimeVR Server.lnk"
     Delete "$DESKTOP\Run SlimeVR Server.lnk"
 
-    RMDir /r $INSTDIR
+    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR"
+
+    Call un.cleanInstDir
+
     DetailPrint "Done."
 SectionEnd
 # Uninstaller section end
