@@ -19,7 +19,7 @@ RequestExecutionLevel user
 Page Directory ; This page might change $InstDir
 Page InstFiles
 
-# Detect Steam and SteamVR installation and prevent installation if none found
+# Detect Steam installation and prevent installation if none found
 Var /GLOBAL SteamPath
 Function .onInit
     ${If} ${RunningX64}
@@ -34,7 +34,7 @@ Function .onInit
     StrCpy $SteamPath $0
 FunctionEnd
 
-# Detect Steam and SteamVR installation and just write path that we need to remove during uninstall (if present)
+# Detect Steam installation and just write path that we need to remove during uninstall (if present)
 Function un.onInit
     ${If} ${RunningX64}
         ReadRegStr $0 HKLM SOFTWARE\WOW6432Node\Valve\Steam InstallPath
@@ -127,7 +127,6 @@ Section
 
     DetailPrint "Copying SlimeVR Server and SlimeVR Driver to installation folder..."
     CopyFiles /SILENT "$TEMP\SlimeVR\SlimeVR\*" $INSTDIR
-    CopyFiles /SILENT "$TEMP\slimevr-openvr-driver-win64\slimevr\*" "$INSTDIR\driver"
     CopyFiles /SILENT "$TEMP\$DownloadedJreFile\jdk-11.0.12+7-jre\*" "$INSTDIR\jre"
 
     # Include modified run.bat that will run bundled JRE
@@ -136,15 +135,11 @@ Section
     # Include SteamVR powershell script to register/unregister driver
     File "steamvr.ps1"
 
-    DetailPrint "Registering SlimeVR Driver..."
-    ${If} ${RunningX64}
-        ExecWait "powershell -ExecutionPolicy Bypass -File $\"$INSTDIR\steamvr.ps1$\" $\"$SteamPath$\" $\"$INSTDIR\driver$\" $\"adddriver$\" $\"win64$\"" $0
-    ${Else}
-        ExecWait "powershell -ExecutionPolicy Bypass -File $\"$INSTDIR\steamvr.ps1$\" $\"$SteamPath$\" $\"$INSTDIR\driver$\" $\"adddriver$\" $\"win32$\"" $0
-    ${EndIf}
+    DetailPrint "Copying SlimeVR Driver to SteamVR..."
+    ExecWait "powershell -ExecutionPolicy Bypass -File $\"$INSTDIR\steamvr.ps1$\" -SteamPath $\"$SteamPath$\" -DriverPath $\"$TEMP\slimevr-openvr-driver-win64\slimevr$\"" $0
     ${If} $0 != 0
         Call cleanInstDir
-        Abort "Failed to register SlimeVR Driver. Make sure you have SteamVR installed."
+        Abort "Failed to copy SlimeVR Driver. Make sure you have SteamVR installed."
     ${EndIf}
 
     # Point the new shortcut at the program uninstaller
@@ -169,11 +164,7 @@ SectionEnd
 
 # Uninstaller section start
 Section "uninstall"
-    ${If} ${RunningX64}
-        ExecWait "powershell -ExecutionPolicy Bypass -File $\"$INSTDIR\steamvr.ps1$\" $\"$SteamPath$\" $\"$INSTDIR\driver$\" $\"removedriver$\" $\"win64$\"" $0
-    ${Else}
-        ExecWait "powershell -ExecutionPolicy Bypass -File $\"$INSTDIR\steamvr.ps1$\" $\"$SteamPath$\" $\"$INSTDIR\driver$\" $\"removedriver$\" $\"win32$\"" $0
-    ${EndIf}
+    ExecWait "powershell -ExecutionPolicy Bypass -File $\"$INSTDIR\steamvr.ps1$\" -SteamPath $\"$SteamPath$\" -DriverPath $\"slimevr$\" -Uninstall" $0
 
     # Remove the shortcuts
     Delete "$SMPROGRAMS\Uninstall SlimeVR Server.lnk"
