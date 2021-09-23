@@ -3,7 +3,7 @@
 An NSIS-based web installer for SlimeVR components. It includes:
 
 * Downloading and unpacking SlimeVR Server and SlimeVR Driver into installation directory.
-* Dynamic registration/unregistration of SlimeVR Driver in SteamVR.
+* Dynamic registration/unregistration of SlimeVR Driver in SteamVR (requires Powershell).
 * Downloading JRE 11 from [Adoptium project](https://adoptium.net/).
 
 ## Used plugins
