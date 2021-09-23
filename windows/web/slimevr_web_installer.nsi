@@ -1,5 +1,6 @@
 !include x64.nsh 		; For RunningX64 check
 !include LogicLib.nsh	; For conditional operators
+!include nsDialogs.nsh  ; For custom pages
 
 # Define name of installer
 Name SlimeVR Installer
@@ -16,8 +17,45 @@ InstallDir "$LOCALAPPDATA\Programs\SlimeVR Server" ; $InstDir default value. Def
 # For removing Start Menu shortcut in Windows 7
 RequestExecutionLevel user
 
-Page Directory ; This page might change $InstDir
+Page Custom startPage
+Page Directory dirPre ; This page might change $InstDir
 Page InstFiles
+
+Var Dialog
+Var Label
+Var /GLOBAL hasExistingInstall
+
+Function startPage
+
+    nsDialogs::Create 1018
+    Pop $Dialog
+
+    ${If} $Dialog == error
+        Abort
+    ${EndIf}
+
+    ${NSD_CreateLabel} 0 0 100% 12u "Welcome to SlimeVR Installer!"
+    Pop $Label
+
+    ReadRegStr $hasExistingInstall HKCU Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR InstallPath
+    ${If} $hasExistingInstall != ""
+        ${NSD_CreateLabel} 0 15u 100% 50u "An existing installation was detected in $hasExistingInstall. The installer will update it. Click Next to proceed with update."
+        Pop $Label
+        StrCpy $hasExistingInstall $INSTDIR
+    ${Else}
+        ${NSD_CreateLabel} 0 15u 100% 50u "Click Next to proceed with installation."
+        Pop $Label
+    ${EndIf}
+
+    nsDialogs::Show
+
+FunctionEnd
+
+Function dirPre
+    ${If} $hasExistingInstall != ""
+        Abort
+    ${EndIf}
+FunctionEnd
 
 # Detect Steam installation and prevent installation if none found
 Var /GLOBAL SteamPath
@@ -143,17 +181,21 @@ Section
     ${EndIf}
 
     # Point the new shortcut at the program uninstaller
-    DetailPrint "Creating shortcuts..."
-    CreateShortcut "$SMPROGRAMS\Uninstall SlimeVR Server.lnk" "$INSTDIR\uninstall.exe"
-    CreateShortcut "$SMPROGRAMS\Run SlimeVR Server.lnk" "$INSTDIR\run.bat" "" "$INSTDIR\run.ico"
-    CreateShortcut "$DESKTOP\Run SlimeVR Server.lnk" "$INSTDIR\run.bat" "" "$INSTDIR\run.ico"
+    ${If} $hasExistingInstall == ""
+        DetailPrint "Creating shortcuts..."
+        CreateShortcut "$SMPROGRAMS\Uninstall SlimeVR Server.lnk" "$INSTDIR\uninstall.exe"
+        CreateShortcut "$SMPROGRAMS\Run SlimeVR Server.lnk" "$INSTDIR\run.bat" "" "$INSTDIR\run.ico"
+        CreateShortcut "$DESKTOP\Run SlimeVR Server.lnk" "$INSTDIR\run.bat" "" "$INSTDIR\run.ico"
 
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
-                    "DisplayName" "SlimeVR"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
-                    "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
-                    "DisplayIcon" "$\"$INSTDIR\run.ico$\""
+        WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
+                        "InstallPath" "$\"$INSTDIR$\""
+        WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
+                        "DisplayName" "SlimeVR"
+        WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
+                        "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
+        WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
+                        "DisplayIcon" "$\"$INSTDIR\run.ico$\""
+    ${EndIf}
 
     # Create the uninstaller
     WriteUninstaller "$INSTDIR\uninstall.exe"
