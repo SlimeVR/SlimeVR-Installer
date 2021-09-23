@@ -1,0 +1,1 @@
+@jre\bin\java.exe -Xmx512M -jar slimevr.jar
