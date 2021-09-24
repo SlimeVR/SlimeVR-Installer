@@ -1,0 +1,12 @@
+This is a further reduced build by removing CRT dependency with Win32 calls.
+It is barely tested, so use with caution; ie I may have introduced bugs.  
+The uncompressed plugin is now 40KB instead of 80KB; compresses via UPX down to 22KB.
+
+Changes from original realeas:
+Added miniclib (from untgz plugin but with strstr() added) & adjusted files to use it.
+Updated zlib from 1.1.3 to 1.2.2; except unzip.c/.h
+Note: zlib is adjusted to use miniclib (ie direct Win32 calls) and not standard release.
+Updated MSVC6 project files to reflect above changes (VC7 ones out of date!).
+
+KJD 
+050713
