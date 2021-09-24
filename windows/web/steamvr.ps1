@@ -32,10 +32,10 @@ $SteamVrPath = "$SteamPath\steamapps\common\SteamVR"
 if ((Test-Path -Path "$SteamVrPath\bin") -eq $true) {
     if ($Uninstall -eq $true) {
         Remove-Item -Recurse -Path "$SteamVrPath\drivers\$DriverFolder"
-        return 0
+        return
     }
     Copy-Item -Recurse -Force -Path $DriverPath -Destination "$SteamVrPath\drivers"
-    return 0
+    return
 }
 
 $res = Select-String -Path "$SteamPath\steamapps\libraryfolders.vdf" -Pattern '"path"\s+"(.+?)"' -AllMatches
@@ -45,9 +45,11 @@ foreach ($Match in $res.Matches) {
     if ((Test-Path -Path "$SteamVrPath\bin") -eq $true) {
         if ($Uninstall -eq $true) {
             Remove-Item -Recurse -Path "$SteamVrPath\drivers\$DriverFolder"
-            return 0
+            return
         }
         Copy-Item -Recurse -Force -Path $DriverPath -Destination "$SteamVrPath\drivers"
-        return 0
+        return
     }
 }
+
+exit 1

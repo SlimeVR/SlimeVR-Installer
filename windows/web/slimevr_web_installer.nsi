@@ -174,7 +174,8 @@ Section
     File "steamvr.ps1"
 
     DetailPrint "Copying SlimeVR Driver to SteamVR..."
-    ExecWait "powershell -ExecutionPolicy Bypass -File $\"$INSTDIR\steamvr.ps1$\" -SteamPath $\"$SteamPath$\" -DriverPath $\"$TEMP\slimevr-openvr-driver-win64\slimevr$\"" $0
+    nsExec::Exec "powershell -ExecutionPolicy Bypass -File $\"$INSTDIR\steamvr.ps1$\" -SteamPath $\"$SteamPath$\" -DriverPath $\"$TEMP\slimevr-openvr-driver-win64\slimevr$\"" $0
+    Pop $0
     ${If} $0 != 0
         Call cleanInstDir
         Abort "Failed to copy SlimeVR Driver. Make sure you have SteamVR installed."
@@ -206,7 +207,8 @@ SectionEnd
 
 # Uninstaller section start
 Section "uninstall"
-    ExecWait "powershell -ExecutionPolicy Bypass -File $\"$INSTDIR\steamvr.ps1$\" -SteamPath $\"$SteamPath$\" -DriverPath $\"slimevr$\" -Uninstall" $0
+    nsExec::Exec "powershell -ExecutionPolicy Bypass -File $\"$INSTDIR\steamvr.ps1$\" -SteamPath $\"$SteamPath$\" -DriverPath $\"slimevr$\" -Uninstall" $0
+    Pop $0
 
     # Remove the shortcuts
     Delete "$SMPROGRAMS\Uninstall SlimeVR Server.lnk"
