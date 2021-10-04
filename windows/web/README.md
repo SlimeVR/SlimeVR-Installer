@@ -2,9 +2,11 @@
 
 An NSIS-based web installer for SlimeVR components. It includes:
 
-* Downloading and unpacking SlimeVR Server and SlimeVR Driver into installation directory.
-* Dynamic registration/unregistration of SlimeVR Driver in SteamVR (requires Powershell).
+* Downloading and unpacking SlimeVR Server into installation directory.
+* Download SlimeVR Driver and copy/remove it to/from SteamVR (requires Powershell).
 * Downloading JRE 11 from [Adoptium project](https://adoptium.net/).
+* Adding/removing firewall rules.
+* Installing CH340/CH341 and CP210x drivers (requires user interaction).
 
 ## Used plugins
 

@@ -12,10 +12,10 @@ SetCompressor lzma  # Use LZMA Compression algorithm, compression quality is bet
 OutFile "slimevr_web_installer.exe"
 
 # Define installation directory
-InstallDir "$LOCALAPPDATA\Programs\SlimeVR Server" ; $InstDir default value. Defaults to user's local appdata to avoid asking admin rights
+InstallDir "$PROGRAMFILES\SlimeVR Server" ; $InstDir default value. Defaults to user's local appdata to avoid asking admin rights
 
 # For removing Start Menu shortcut in Windows 7
-RequestExecutionLevel user
+RequestExecutionLevel admin
 
 Page Custom startPage
 Page Directory dirPre ; This page might change $InstDir
@@ -88,10 +88,13 @@ Function .onGUIEnd
     Delete "$TEMP\SlimeVR.zip"
     Delete "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.12_7.zip"
     Delete "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.12_7.zip"
+    Delete "$TEMP\CP210x_Universal_Windows_Driver.zip"
+    Delete "$TEMP\CH341SER.EXE"
     RMDir /r "$TEMP\slimevr-openvr-driver-win64"
     RMDir /r "$TEMP\SlimeVR"
     RMDir /r "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.12_7"
     RMDir /r "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.12_7"
+    RMDir /r "$TEMP\CP210x_Universal_Windows_Driver"
 FunctionEnd
 
 !macro cleanInstDir un
@@ -104,6 +107,7 @@ Function ${un}cleanInstDir
     Delete "$INSTDIR\MagnetoLib.dll"
     Delete "$INSTDIR\steamvr.ps1"
     Delete "$INSTDIR\log*"
+    Delete "$INSTDIR\*.log"
     Delete "$INSTDIR\vrconfig.yml"
 
     RMdir /r "$INSTDIR\jre"
@@ -119,20 +123,22 @@ FunctionEnd
 
 # InstFiles section start
 Section
-    Var /GLOBAL DownloadedJreFile
-    DetailPrint "Downloading Java JRE..."
-    ${If} ${RunningX64}
-        NScurl::http GET "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.12%2B7/OpenJDK11U-jre_x64_windows_hotspot_11.0.12_7.zip" "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.12_7.zip" /CANCEL /RESUME /END
-        StrCpy $DownloadedJreFile "OpenJDK11U-jre_x64_windows_hotspot_11.0.12_7"
-    ${Else}
-        NScurl::http GET "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.12%2B7/OpenJDK11U-jre_x86-32_windows_hotspot_11.0.12_7.zip" "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.12_7.zip" /CANCEL /RESUME /END
-        StrCpy $DownloadedJreFile "OpenJDK11U-jre_x86-32_windows_hotspot_11.0.12_7"
-    ${EndIf}
-    Pop $0 ; Status text ("OK" for success)
-    ${If} $0 != "OK"
-        Abort "Failed to download Java JRE."
-    ${EndIf}
-    DetailPrint "Downloaded!"
+    ${If} $hasExistingInstall == ""
+        Var /GLOBAL DownloadedJreFile
+        DetailPrint "Downloading Java JRE..."
+        ${If} ${RunningX64}
+            NScurl::http GET "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.12%2B7/OpenJDK11U-jre_x64_windows_hotspot_11.0.12_7.zip" "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.12_7.zip" /CANCEL /RESUME /END
+            StrCpy $DownloadedJreFile "OpenJDK11U-jre_x64_windows_hotspot_11.0.12_7"
+        ${Else}
+            NScurl::http GET "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.12%2B7/OpenJDK11U-jre_x86-32_windows_hotspot_11.0.12_7.zip" "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.12_7.zip" /CANCEL /RESUME /END
+            StrCpy $DownloadedJreFile "OpenJDK11U-jre_x86-32_windows_hotspot_11.0.12_7"
+        ${EndIf}
+        Pop $0 ; Status text ("OK" for success)
+        ${If} $0 != "OK"
+            Abort "Failed to download Java JRE."
+        ${EndIf}
+        DetailPrint "Downloaded!"
+    ${Endif}
 
     DetailPrint "Downloading SlimeVR Driver..."
     NScurl::http GET "https://github.com/SlimeVR/SlimeVR-OpenVR-Driver/releases/latest/download/slimevr-openvr-driver-win64.zip" "$TEMP\slimevr-openvr-driver-win64.zip" /CANCEL /RESUME /END
@@ -157,15 +163,47 @@ Section
     nsisunz::Unzip "$TEMP\SlimeVR.zip" "$TEMP\SlimeVR\"
     Pop $0
 
-    nsisunz::Unzip "$TEMP\$DownloadedJreFile.zip" "$TEMP\$DownloadedJreFile\"
-    Pop $0
+    ${If} $hasExistingInstall == ""
+        DetailPrint "Installing USB drivers...."
+
+        DetailPrint "Downloading CP210x driver..."
+        # CP210X drivers (NodeMCU v2)
+        NScurl::http GET "https://www.silabs.com/documents/public/software/CP210x_Universal_Windows_Driver.zip" "$TEMP\CP210x_Universal_Windows_Driver.zip" /CANCEL /RESUME /END
+        Pop $0 ; Status text ("OK" for success)
+        ${If} $0 != "OK"
+            Abort "Failed to download CP210x driver."
+        ${EndIf}
+        DetailPrint "Downloaded!"
+        nsisunz::Unzip "$TEMP\CP210x_Universal_Windows_Driver.zip" "$TEMP\CP210x_Universal_Windows_Driver\"
+        ${If} ${RunningX64}
+            ExecWait "$TEMP\CP210x_Universal_Windows_Driver\CP210xVCPInstaller_x64.exe"
+        ${Else}
+            ExecWait "$TEMP\CP210x_Universal_Windows_Driver\CP210xVCPInstaller_x86.exe"
+        ${EndIf}
+
+        # CH340/CH341 drivers (NodeMCU v3)
+        DetailPrint "Downloading CH340/CH341 driver..."
+        NScurl::http GET "https://cdn.sparkfun.com/assets/learn_tutorials/8/4/4/CH341SER.EXE" "$TEMP\CH341SER.EXE" /CANCEL /RESUME /END
+        Pop $0 ; Status text ("OK" for success)
+        ${If} $0 != "OK"
+            Abort "Failed to download CH340/CH341 driver."
+        ${EndIf}
+        DetailPrint "Downloaded!"
+        ExecWait "$TEMP\CH341SER.EXE"
+    ${Endif}
 
     # Set the installation directory as the destination for the following actions
     SetOutPath $INSTDIR
 
-    DetailPrint "Copying SlimeVR Server and SlimeVR Driver to installation folder..."
+    ${If} $hasExistingInstall == ""
+        DetailPrint "Copying Java JRE to installation folder...."
+        nsisunz::Unzip "$TEMP\$DownloadedJreFile.zip" "$TEMP\$DownloadedJreFile\"
+        Pop $0
+        CopyFiles /SILENT "$TEMP\$DownloadedJreFile\jdk-11.0.12+7-jre\*" "$INSTDIR\jre"
+    ${Endif}
+
+    DetailPrint "Copying SlimeVR Server to installation folder..."
     CopyFiles /SILENT "$TEMP\SlimeVR\SlimeVR\*" $INSTDIR
-    CopyFiles /SILENT "$TEMP\$DownloadedJreFile\jdk-11.0.12+7-jre\*" "$INSTDIR\jre"
 
     # Include modified run.bat that will run bundled JRE
     File "run.bat"
@@ -181,7 +219,11 @@ Section
         Abort "Failed to copy SlimeVR Driver. Make sure you have SteamVR installed."
     ${EndIf}
 
-    # Point the new shortcut at the program uninstaller
+    ${If} $hasExistingInstall == ""
+        DetailPrint "Adding SlimeVR Server to firewall exceptions...."
+        nsExec::Exec "$INSTDIR\firewall.bat"
+    ${Endif}
+
     ${If} $hasExistingInstall == ""
         DetailPrint "Creating shortcuts..."
         CreateShortcut "$SMPROGRAMS\Uninstall SlimeVR Server.lnk" "$INSTDIR\uninstall.exe"
@@ -214,6 +256,11 @@ Section "uninstall"
     Delete "$SMPROGRAMS\Uninstall SlimeVR Server.lnk"
     Delete "$SMPROGRAMS\Run SlimeVR Server.lnk"
     Delete "$DESKTOP\Run SlimeVR Server.lnk"
+
+    nsExec::Exec "netsh advfirewall firewall delete rule name=$\"UDP 6969 incoming$\""
+    nsExec::Exec "netsh advfirewall firewall delete rule name=$\"UDP 35903 incoming$\""
+    nsExec::Exec "netsh advfirewall firewall delete rule name=$\"UDP 6969 outgoing$\""
+    nsExec::Exec "netsh advfirewall firewall delete rule name=$\"UDP 35903 outgoing$\""
 
     DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR"
 
