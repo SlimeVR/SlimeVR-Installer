@@ -14,7 +14,10 @@ OutFile "slimevr_web_installer.exe"
 # Define installation directory
 InstallDir "$PROGRAMFILES\SlimeVR Server" ; $InstDir default value. Defaults to user's local appdata to avoid asking admin rights
 
-# For removing Start Menu shortcut in Windows 7
+# Admin rights are required for:
+# 1. Removing Start Menu shortcut in Windows 7
+# 2. Adding/removing firewall rule
+# 3. USB drivers installation
 RequestExecutionLevel admin
 
 Page Custom startPage
@@ -51,7 +54,9 @@ Function startPage
 
 FunctionEnd
 
+# Pre-hook for directory selection function
 Function dirPre
+    # Skip directory selection if existing installation was detected
     ${If} $hasExistingInstall != ""
         Abort
     ${EndIf}
@@ -230,6 +235,7 @@ Section
         CreateShortcut "$SMPROGRAMS\Run SlimeVR Server.lnk" "$INSTDIR\run.bat" "" "$INSTDIR\run.ico"
         CreateShortcut "$DESKTOP\Run SlimeVR Server.lnk" "$INSTDIR\run.bat" "" "$INSTDIR\run.ico"
 
+        DetailPrint "Registering installation..."
         WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
                         "InstallPath" "$\"$INSTDIR$\""
         WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
@@ -262,6 +268,7 @@ Section "uninstall"
     nsExec::Exec "netsh advfirewall firewall delete rule name=$\"UDP 6969 outgoing$\""
     nsExec::Exec "netsh advfirewall firewall delete rule name=$\"UDP 35903 outgoing$\""
 
+    DetailPrint "Unregistering installation..."
     DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR"
 
     Call un.cleanInstDir
