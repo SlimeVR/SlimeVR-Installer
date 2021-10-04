@@ -263,10 +263,8 @@ Section "uninstall"
     Delete "$SMPROGRAMS\Run SlimeVR Server.lnk"
     Delete "$DESKTOP\Run SlimeVR Server.lnk"
 
-    nsExec::Exec "netsh advfirewall firewall delete rule name=$\"UDP 6969 incoming$\""
-    nsExec::Exec "netsh advfirewall firewall delete rule name=$\"UDP 35903 incoming$\""
-    nsExec::Exec "netsh advfirewall firewall delete rule name=$\"UDP 6969 outgoing$\""
-    nsExec::Exec "netsh advfirewall firewall delete rule name=$\"UDP 35903 outgoing$\""
+    DetailPrint "Removing SlimeVR Server from firewall exceptions...."
+    nsExec::Exec "$INSTDIR\firewall_uninstall.bat"
 
     DetailPrint "Unregistering installation..."
     DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR"
