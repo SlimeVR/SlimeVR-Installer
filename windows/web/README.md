@@ -6,7 +6,7 @@ An NSIS-based web installer for SlimeVR components. It includes:
 * Download SlimeVR Driver and copy/remove it to/from SteamVR (requires Powershell).
 * Downloading JRE 11 from [Adoptium project](https://adoptium.net/).
 * Adding/removing firewall rules.
-* Installing CH340/CH341 and CP210x drivers (requires user interaction).
+* Installing CH340/CH341 and CP210x drivers.
 
 ## Used plugins
 
@@ -20,7 +20,8 @@ The NSIS script is powered by the following plugins:
 1. Download and install the latest [NSIS package](https://nsis.sourceforge.io/Download).
 1. Copy plugin DLLs to corresponding folders to `<NSIS_INSTDIR>\Plugins`.
 1. Run NSIS and click **Compile NSI scripts**.
-1. Follow the usage instructions in the opened **MakeNSISW** window.
+1. Open and build `slimevr_web_installer.nsi` by following the usage instructions in the opened **MakeNSISW** window.
+1. Open and build `usb_drivers_installer.nsi` the same way as in previous step.
 
 ## Useful links
 

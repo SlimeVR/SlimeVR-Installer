@@ -1,3 +1,5 @@
+Unicode True
+
 !include x64.nsh 		; For RunningX64 check
 !include LogicLib.nsh	; For conditional operators
 !include nsDialogs.nsh  ; For custom pages
@@ -93,13 +95,11 @@ Function .onGUIEnd
     Delete "$TEMP\SlimeVR.zip"
     Delete "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.12_7.zip"
     Delete "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.12_7.zip"
-    Delete "$TEMP\CP210x_Universal_Windows_Driver.zip"
-    Delete "$TEMP\CH341SER.EXE"
+    Delete "$TEMP\usb_drivers_installer.exe"
     RMDir /r "$TEMP\slimevr-openvr-driver-win64"
     RMDir /r "$TEMP\SlimeVR"
     RMDir /r "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.12_7"
     RMDir /r "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.12_7"
-    RMDir /r "$TEMP\CP210x_Universal_Windows_Driver"
 FunctionEnd
 
 !macro cleanInstDir un
@@ -169,32 +169,18 @@ Section
     Pop $0
 
     ${If} $hasExistingInstall == ""
-        DetailPrint "Installing USB drivers...."
+        DetailPrint "Downloading USB drivers installer...."
 
-        DetailPrint "Downloading CP210x driver..."
-        # CP210X drivers (NodeMCU v2)
-        NScurl::http GET "https://www.silabs.com/documents/public/software/CP210x_Universal_Windows_Driver.zip" "$TEMP\CP210x_Universal_Windows_Driver.zip" /CANCEL /RESUME /END
+        NScurl::http GET "https://github.com/SlimeVR/SlimeVR-Installer/raw/main/windows/web/usb_drivers_installer.exe" "$TEMP\usb_drivers_installer.exe" /CANCEL /RESUME /END
         Pop $0 ; Status text ("OK" for success)
         ${If} $0 != "OK"
-            Abort "Failed to download CP210x driver."
+            Abort "Failed to download USB drivers installer."
         ${EndIf}
-        DetailPrint "Downloaded!"
-        nsisunz::Unzip "$TEMP\CP210x_Universal_Windows_Driver.zip" "$TEMP\CP210x_Universal_Windows_Driver\"
-        ${If} ${RunningX64}
-            ExecWait "$TEMP\CP210x_Universal_Windows_Driver\CP210xVCPInstaller_x64.exe"
-        ${Else}
-            ExecWait "$TEMP\CP210x_Universal_Windows_Driver\CP210xVCPInstaller_x86.exe"
-        ${EndIf}
-
-        # CH340/CH341 drivers (NodeMCU v3)
-        DetailPrint "Downloading CH340/CH341 driver..."
-        NScurl::http GET "https://cdn.sparkfun.com/assets/learn_tutorials/8/4/4/CH341SER.EXE" "$TEMP\CH341SER.EXE" /CANCEL /RESUME /END
-        Pop $0 ; Status text ("OK" for success)
-        ${If} $0 != "OK"
-            Abort "Failed to download CH340/CH341 driver."
-        ${EndIf}
-        DetailPrint "Downloaded!"
-        ExecWait "$TEMP\CH341SER.EXE"
+        nsExec::Exec '"$TEMP\usb_drivers_installer.exe"' $0
+        Pop $0
+        ${If} $0 == 1
+            Abort "Failed to install USB drivers."
+        ${Endif}
     ${Endif}
 
     # Set the installation directory as the destination for the following actions
@@ -226,7 +212,7 @@ Section
 
     ${If} $hasExistingInstall == ""
         DetailPrint "Adding SlimeVR Server to firewall exceptions...."
-        nsExec::Exec "$INSTDIR\firewall.bat"
+        nsExec::Exec '"$INSTDIR\firewall.bat"'
     ${Endif}
 
     ${If} $hasExistingInstall == ""
@@ -264,7 +250,7 @@ Section "uninstall"
     Delete "$DESKTOP\Run SlimeVR Server.lnk"
 
     DetailPrint "Removing SlimeVR Server from firewall exceptions...."
-    nsExec::Exec "$INSTDIR\firewall_uninstall.bat"
+    nsExec::Exec '"$INSTDIR\firewall_uninstall.bat"'
 
     DetailPrint "Unregistering installation..."
     DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR"
