@@ -22,7 +22,6 @@ The NSIS script is powered by the following plugins:
 1. Copy plugin DLLs to corresponding folders to `<NSIS_INSTDIR>\Plugins`.
 1. Run NSIS and click **Compile NSI scripts**.
 1. Open and build `slimevr_web_installer.nsi` by following the usage instructions in the opened **MakeNSISW** window.
-1. Open and build `usb_drivers_installer.nsi` the same way as in previous step.
 
 ## Useful links
 
