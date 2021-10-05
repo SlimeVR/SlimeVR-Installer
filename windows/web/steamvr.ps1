@@ -28,6 +28,7 @@ if ($DriverPaths.Length -eq 0) {
 ConvertTo-Json -InputObject $OpenVrConfig | Out-File -FilePath "$env:LOCALAPPDATA\openvr\openvrpaths.vrpath"
 
 $DriverFolder = Split-Path -Path $DriverPath -Leaf
+# Check if SteamVR is located in the Steam installation folder
 $SteamVrPath = "$SteamPath\steamapps\common\SteamVR"
 if ((Test-Path -Path "$SteamVrPath\bin") -eq $true) {
     if ($Uninstall -eq $true) {
@@ -38,6 +39,7 @@ if ((Test-Path -Path "$SteamVrPath\bin") -eq $true) {
     return
 }
 
+# If not, try looking it up in defined library folders
 $res = Select-String -Path "$SteamPath\steamapps\libraryfolders.vdf" -Pattern '"path"\s+"(.+?)"' -AllMatches
 foreach ($Match in $res.Matches) {
     $LibraryPath = $Match.Groups[1] -replace "\\\\", "\"
