@@ -100,6 +100,7 @@ Function .onGUIEnd
     RMDir /r "$TEMP\SlimeVR"
     RMDir /r "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.12_7"
     RMDir /r "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.12_7"
+    RMDir /r "$TEMP\slimevr_usb_drivers_inst"
 FunctionEnd
 
 !macro cleanInstDir un
@@ -169,18 +170,34 @@ Section
     Pop $0
 
     ${If} $hasExistingInstall == ""
-        DetailPrint "Downloading USB drivers installer...."
+        DetailPrint "Installing USB drivers...."
 
-        NScurl::http GET "https://github.com/SlimeVR/SlimeVR-Installer/raw/main/windows/web/usb_drivers_installer.exe" "$TEMP\usb_drivers_installer.exe" /CANCEL /RESUME /END
-        Pop $0 ; Status text ("OK" for success)
-        ${If} $0 != "OK"
-            Abort "Failed to download USB drivers installer."
-        ${EndIf}
-        nsExec::Exec '"$TEMP\usb_drivers_installer.exe"' $0
+        # CP210X drivers (NodeMCU v2)
+        SetOutPath "$TEMP\slimevr_usb_drivers_inst\CP201x"
+        DetailPrint "Installing CP210x driver..."
+        File /r "CP201x\*"
+        ${DisableX64FSRedirection}
+        nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "$TEMP\slimevr_usb_drivers_inst\CP201x\silabser.inf"' $0
         Pop $0
-        ${If} $0 == 1
-            Abort "Failed to install USB drivers."
+        ${EnableX64FSRedirection}
+        ${If} $0 != 0
+            SetErrorLevel 1
+            Abort "Failed to install CP210x driver."
         ${Endif}
+
+        # CH340 drivers (NodeMCU v3)
+        SetOutPath "$TEMP\slimevr_usb_drivers_inst\CH341SER"
+        DetailPrint "Installing CH340 driver..."
+        File /r "CH341SER\*"
+        ${DisableX64FSRedirection}
+        nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "$TEMP\slimevr_usb_drivers_inst\CH341SER\CH341SER.INF"' $0
+        Pop $0
+        ${EnableX64FSRedirection}
+        ${If} $0 != 0
+            SetErrorLevel 1
+            Abort "Failed to install CH340 driver."
+        ${Endif}
+
     ${Endif}
 
     # Set the installation directory as the destination for the following actions
