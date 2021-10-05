@@ -67,12 +67,13 @@ Function ${un}cleanInstDir
     Delete "$INSTDIR\run.bat"
     Delete "$INSTDIR\run.ico"
     Delete "$INSTDIR\slimevr.jar"
-    Delete "$INSTDIR\firewall.bat"
+    Delete "$INSTDIR\firewall*.bat"
     Delete "$INSTDIR\MagnetoLib.dll"
     Delete "$INSTDIR\steamvr.ps1"
     Delete "$INSTDIR\log*"
     Delete "$INSTDIR\*.log"
     Delete "$INSTDIR\vrconfig.yml"
+    Delete "$INSTDIR\LICENSE"
 
     RMdir /r "$INSTDIR\jre"
     RMdir /r "$INSTDIR\driver"
@@ -188,7 +189,7 @@ Section
         ${EndIf}
         Pop $0 ; Status text ("OK" for success)
         ${If} $0 != "OK"
-            Abort "Failed to download Java JRE."
+            Abort "Failed to download Java JRE. Reason: $0."
         ${EndIf}
         DetailPrint "Downloaded!"
     ${Endif}
@@ -197,7 +198,7 @@ Section
     NScurl::http GET "https://github.com/SlimeVR/SlimeVR-OpenVR-Driver/releases/latest/download/slimevr-openvr-driver-win64.zip" "$TEMP\slimevr-openvr-driver-win64.zip" /CANCEL /RESUME /END
     Pop $0 ; Status text ("OK" for success)
     ${If} $0 != "OK"
-        Abort "Failed to download SlimeVR Driver."
+        Abort "Failed to download SlimeVR Driver. Reason: $0."
     ${EndIf}
     DetailPrint "Downloaded!"
 
@@ -205,16 +206,18 @@ Section
     NScurl::http GET "https://github.com/SlimeVR/SlimeVR-Server/releases/latest/download/SlimeVR.zip" "$TEMP\SlimeVR.zip" /CANCEL /RESUME /END
     Pop $0 ; Status text ("OK" for success)
     ${If} $0 != "OK"
-        Abort "Failed to download SlimeVR Server."
+        Abort "Failed to download SlimeVR Server. Reason: $0."
     ${EndIf}
     DetailPrint "Downloaded!"
 
     DetailPrint "Unpacking downloaded files..."
     nsisunz::Unzip "$TEMP\slimevr-openvr-driver-win64.zip" "$TEMP\slimevr-openvr-driver-win64\"
     Pop $0
+    DetailPrint "Unzipping finished with $0."
 
     nsisunz::Unzip "$TEMP\SlimeVR.zip" "$TEMP\SlimeVR\"
     Pop $0
+    DetailPrint "Unzipping finished with $0."
 
     ${If} $hasExistingInstall == ""
         DetailPrint "Installing USB drivers...."
@@ -227,9 +230,14 @@ Section
         nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "$TEMP\slimevr_usb_drivers_inst\CP201x\silabser.inf"' $0
         Pop $0
         ${EnableX64FSRedirection}
-        ${If} $0 != 0
-            SetErrorLevel 1
-            Abort "Failed to install CP210x driver."
+        ${If} $0 == 0
+            DetailPrint "Success!"
+        ${ElseIf} $0 == 259
+            DetailPrint "No devices match the supplied driver or the target device is already using a better or newer driver than the driver specified for installation."
+        ${ElseIf} $0 == 3010
+            DetailPrint "The requested operation completed successfully and a system reboot is required."
+        ${Else}
+            Abort "Failed to install CP210x driver. Error code: $0."
         ${Endif}
 
         # CH340 drivers (NodeMCU v3)
@@ -240,20 +248,25 @@ Section
         nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "$TEMP\slimevr_usb_drivers_inst\CH341SER\CH341SER.INF"' $0
         Pop $0
         ${EnableX64FSRedirection}
-        ${If} $0 != 0
-            SetErrorLevel 1
-            Abort "Failed to install CH340 driver."
+        ${If} $0 == 0
+            DetailPrint "Success!"
+        ${ElseIf} $0 == 259
+            DetailPrint "No devices match the supplied driver or the target device is already using a better or newer driver than the driver specified for installation."
+        ${ElseIf} $0 == 3010
+            DetailPrint "The requested operation completed successfully and a system reboot is required."
+        ${Else}
+            Abort "Failed to install CP210x driver. Error code: $0."
         ${Endif}
-
     ${Endif}
 
     # Set the installation directory as the destination for the following actions
     SetOutPath $INSTDIR
 
     ${If} $hasExistingInstall == ""
-        DetailPrint "Copying Java JRE to installation folder...."
+        DetailPrint "Unzipping Java JRE to installation folder...."
         nsisunz::Unzip "$TEMP\$DownloadedJreFile.zip" "$TEMP\$DownloadedJreFile\"
         Pop $0
+        DetailPrint "Unzipping finished with $0."
         CopyFiles /SILENT "$TEMP\$DownloadedJreFile\jdk-11.0.12+7-jre\*" "$INSTDIR\jre"
     ${Endif}
 
@@ -289,8 +302,9 @@ Section
 
     ${If} $hasExistingInstall == ""
         DetailPrint "Creating shortcuts..."
-        CreateShortcut "$SMPROGRAMS\Uninstall SlimeVR Server.lnk" "$INSTDIR\uninstall.exe"
-        CreateShortcut "$SMPROGRAMS\SlimeVR Server.lnk" "$INSTDIR\run.bat" "" "$INSTDIR\run.ico"
+        CreateDirectory "$SMPROGRAMS\SlimeVR Server"
+        CreateShortcut "$SMPROGRAMS\SlimeVR Server\Uninstall SlimeVR Server.lnk" "$INSTDIR\uninstall.exe"
+        CreateShortcut "$SMPROGRAMS\SlimeVR Server\SlimeVR Server.lnk" "$INSTDIR\run.bat" "" "$INSTDIR\run.ico"
         CreateShortcut "$DESKTOP\SlimeVR Server.lnk" "$INSTDIR\run.bat" "" "$INSTDIR\run.ico"
 
         DetailPrint "Registering installation..."
@@ -311,8 +325,6 @@ Section
     # when installing to folders with limited access
     AccessControl::GrantOnFile $INSTDIR "(BU)" "FullAccess"
     Pop $0
-
-    DetailPrint "Done."
 SectionEnd
 # InstFiles section end
 
@@ -324,6 +336,8 @@ Section "uninstall"
     Pop $0
 
     # Remove the shortcuts
+    RMdir /r "$SMPROGRAMS\SlimeVR Server"
+    # Remove separate shortcuts introduced with first release
     Delete "$SMPROGRAMS\Uninstall SlimeVR Server.lnk"
     Delete "$SMPROGRAMS\SlimeVR Server.lnk"
     Delete "$DESKTOP\SlimeVR Server.lnk"
