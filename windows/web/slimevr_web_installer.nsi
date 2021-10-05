@@ -22,48 +22,6 @@ InstallDir "$PROGRAMFILES\SlimeVR Server" ; $InstDir default value. Defaults to 
 # 3. USB drivers installation
 RequestExecutionLevel admin
 
-Page Custom startPage
-Page Directory dirPre ; This page might change $InstDir
-Page InstFiles
-
-Var Dialog
-Var Label
-Var /GLOBAL hasExistingInstall
-
-Function startPage
-
-    nsDialogs::Create 1018
-    Pop $Dialog
-
-    ${If} $Dialog == error
-        Abort
-    ${EndIf}
-
-    ${NSD_CreateLabel} 0 0 100% 12u "Welcome to SlimeVR Installer!"
-    Pop $Label
-
-    ReadRegStr $hasExistingInstall HKCU Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR InstallPath
-    ${If} $hasExistingInstall != ""
-        ${NSD_CreateLabel} 0 15u 100% 50u "An existing installation was detected in $hasExistingInstall. The installer will update it. Click Next to proceed with update."
-        Pop $Label
-        StrCpy $hasExistingInstall $INSTDIR
-    ${Else}
-        ${NSD_CreateLabel} 0 15u 100% 50u "Click Next to proceed with installation."
-        Pop $Label
-    ${EndIf}
-
-    nsDialogs::Show
-
-FunctionEnd
-
-# Pre-hook for directory selection function
-Function dirPre
-    # Skip directory selection if existing installation was detected
-    ${If} $hasExistingInstall != ""
-        Abort
-    ${EndIf}
-FunctionEnd
-
 # Detect Steam installation and prevent installation if none found
 Var /GLOBAL SteamPath
 Function .onInit
@@ -89,13 +47,13 @@ Function un.onInit
     StrCpy $SteamPath $0
 FunctionEnd
 
+# Init functions start #
 # Clean up on exit
 Function .onGUIEnd
     Delete "$TEMP\slimevr-openvr-driver-win64.zip"
     Delete "$TEMP\SlimeVR.zip"
     Delete "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.12_7.zip"
     Delete "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.12_7.zip"
-    Delete "$TEMP\usb_drivers_installer.exe"
     RMDir /r "$TEMP\slimevr-openvr-driver-win64"
     RMDir /r "$TEMP\SlimeVR"
     RMDir /r "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.12_7"
@@ -126,6 +84,95 @@ FunctionEnd
 
 !insertmacro cleanInstDir ""
 !insertmacro cleanInstDir "un."
+# Init functions end #
+
+Page Custom startPage
+Page Custom steamVrDirectoryPage
+Page Directory dirPre ; This page might change $InstDir
+Page InstFiles
+
+Var Dialog
+Var Label
+Var /GLOBAL hasExistingInstall
+Var /GLOBAL steamVrDirectory
+Var /GLOBAL DESTTEXT
+Var /GLOBAL DEST
+var /GLOBAL BROWSEDEST
+
+Function startPage
+
+    nsDialogs::Create 1018
+    Pop $Dialog
+
+    ${If} $Dialog == error
+        Abort
+    ${EndIf}
+
+    ${NSD_CreateLabel} 0 0 100% 12u "Welcome to SlimeVR Installer!"
+    Pop $Label
+
+    ReadRegStr $hasExistingInstall HKCU Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR InstallPath
+    ${If} $hasExistingInstall != ""
+        ${NSD_CreateLabel} 0 15u 100% 50u "An existing installation was detected in $hasExistingInstall. The installer will update it. Click Next to proceed with update."
+        Pop $Label
+        StrCpy $hasExistingInstall $INSTDIR
+    ${Else}
+        ${NSD_CreateLabel} 0 15u 100% 50u "Click Next to proceed with installation."
+        Pop $Label
+    ${EndIf}
+
+    nsDialogs::Show
+
+FunctionEnd
+
+Function steamVrDirectoryPage
+
+    # If powershell is present - rely on automatic detection.
+    ${DisableX64FSRedirection}
+    nsExec::Exec "$SYSDIR\WindowsPowerShell\v1.0\powershell.exe Get-Host" $0
+    ${EnableX64FSRedirection}
+    Pop $0
+    ${If} $0 == 0
+        Abort
+    ${Endif}
+
+    #Create Dialog and quit if error
+    nsDialogs::Create 1018
+    Pop $Dialog
+    ${If} $Dialog == error
+        Abort
+    ${EndIf}
+
+    StrCpy $steamVrDirectory "$SteamPath\steamapps\common\SteamVR"
+    ${NSD_CreateLabel} 0 0 100% 20u "Specify a path to your SteamVR installation by clicking Browse. Then click Next to proceed with installation."
+    ${NSD_CreateLabel} 0 60 100% 12u "Destination"
+    ${NSD_CreateText} 0 80 80% 12u "$SteamPath\steamapps\common\SteamVR"
+    pop $DESTTEXT
+    ${NSD_CreateBrowseButton} 320 80 20% 12u "Browse"
+    pop $BROWSEDEST
+
+    ${NSD_OnClick} $BROWSEDEST Browsedest
+
+    nsDialogs::Show
+FunctionEnd
+
+Function Browsedest
+    nsDialogs::SelectFolderDialog "Select SteamVR installation folder" "$SteamPath\steamapps\common\SteamVR"
+    Pop $DEST
+    ${If} $DEST == error
+        Abort
+    ${Endif}
+    StrCpy $steamVrDirectory $DEST
+    ${NSD_SetText} $DESTTEXT $DEST
+FunctionEnd
+
+# Pre-hook for directory selection function
+Function dirPre
+    # Skip directory selection if existing installation was detected
+    ${If} $hasExistingInstall != ""
+        Abort
+    ${EndIf}
+FunctionEnd
 
 # InstFiles section start
 Section
@@ -220,12 +267,18 @@ Section
     File "steamvr.ps1"
 
     DetailPrint "Copying SlimeVR Driver to SteamVR..."
-    nsExec::Exec "powershell -ExecutionPolicy Bypass -File $\"$INSTDIR\steamvr.ps1$\" -SteamPath $\"$SteamPath$\" -DriverPath $\"$TEMP\slimevr-openvr-driver-win64\slimevr$\"" $0
-    Pop $0
-    ${If} $0 != 0
-        Call cleanInstDir
-        Abort "Failed to copy SlimeVR Driver. Make sure you have SteamVR installed."
-    ${EndIf}
+    ${If} $steamVrDirectory == ""
+        ${DisableX64FSRedirection}
+        nsExec::Exec "$SYSDIR\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -File $\"$INSTDIR\steamvr.ps1$\" -SteamPath $\"$SteamPath$\" -DriverPath $\"$TEMP\slimevr-openvr-driver-win64\slimevr$\"" $0
+        ${EnableX64FSRedirection}
+        Pop $0
+        ${If} $0 != 0
+            Call cleanInstDir
+            Abort "Failed to copy SlimeVR Driver. Make sure you have SteamVR installed."
+        ${EndIf}
+    ${Else}
+        CopyFiles /SILENT "$TEMP\slimevr-openvr-driver-win64\slimevr" "$steamVrDirectory\drivers"
+    ${Endif}
 
     ${If} $hasExistingInstall == ""
         DetailPrint "Adding SlimeVR Server to firewall exceptions...."
@@ -258,7 +311,9 @@ SectionEnd
 
 # Uninstaller section start
 Section "uninstall"
-    nsExec::Exec "powershell -ExecutionPolicy Bypass -File $\"$INSTDIR\steamvr.ps1$\" -SteamPath $\"$SteamPath$\" -DriverPath $\"slimevr$\" -Uninstall" $0
+    ${DisableX64FSRedirection}
+    nsExec::Exec "$SYSDIR\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -File $\"$INSTDIR\steamvr.ps1$\" -SteamPath $\"$SteamPath$\" -DriverPath $\"slimevr$\" -Uninstall" $0
+    ${EnableX64FSRedirection}
     Pop $0
 
     # Remove the shortcuts
