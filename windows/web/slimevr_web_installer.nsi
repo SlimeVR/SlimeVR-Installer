@@ -273,7 +273,9 @@ Section
         ${EnableX64FSRedirection}
         Pop $0
         ${If} $0 != 0
-            Call cleanInstDir
+            ${If} $hasExistingInstall == ""
+                Call cleanInstDir
+            ${Endif}
             Abort "Failed to copy SlimeVR Driver. Make sure you have SteamVR installed."
         ${EndIf}
     ${Else}
