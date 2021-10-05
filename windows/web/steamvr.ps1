@@ -11,6 +11,7 @@ $ExternalDriverPaths = @()
 if ($OpenVrConfig.external_drivers.Length) {
     foreach ($ExternalDriverPath in $OpenVrConfig.external_drivers) {
         if (-not (Test-Path -Path "$ExternalDriverPath\driver.vrdrivermanifest")) {
+            $ExternalDriverPaths += $ExternalDriverPath
             continue
         }
         $DriverManifest = Get-Content -Path "$ExternalDriverPath\driver.vrdrivermanifest" | ConvertFrom-Json
