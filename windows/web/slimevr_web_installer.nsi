@@ -111,7 +111,7 @@ Function startPage
     ${NSD_CreateLabel} 0 0 100% 12u "Welcome to SlimeVR Installer!"
     Pop $Label
 
-    ReadRegStr $hasExistingInstall HKCU Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR InstallPath
+    ReadRegStr $hasExistingInstall HKLM Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR InstallPath
     ${If} $hasExistingInstall != ""
         ${NSD_CreateLabel} 0 15u 100% 50u "An existing installation was detected in $hasExistingInstall. The installer will update it. Click Next to proceed with update."
         Pop $Label
@@ -294,13 +294,13 @@ Section
         CreateShortcut "$DESKTOP\Run SlimeVR Server.lnk" "$INSTDIR\run.bat" "" "$INSTDIR\run.ico"
 
         DetailPrint "Registering installation..."
-        WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
+        WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
                         "InstallPath" "$\"$INSTDIR$\""
-        WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
+        WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
                         "DisplayName" "SlimeVR"
-        WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
+        WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
                         "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
-        WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
+        WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
                         "DisplayIcon" "$\"$INSTDIR\run.ico$\""
     ${EndIf}
 
@@ -327,7 +327,7 @@ Section "uninstall"
     nsExec::Exec '"$INSTDIR\firewall_uninstall.bat"'
 
     DetailPrint "Unregistering installation..."
-    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR"
+    DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR"
 
     Call un.cleanInstDir
 
