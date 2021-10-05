@@ -290,8 +290,8 @@ Section
     ${If} $hasExistingInstall == ""
         DetailPrint "Creating shortcuts..."
         CreateShortcut "$SMPROGRAMS\Uninstall SlimeVR Server.lnk" "$INSTDIR\uninstall.exe"
-        CreateShortcut "$SMPROGRAMS\Run SlimeVR Server.lnk" "$INSTDIR\run.bat" "" "$INSTDIR\run.ico"
-        CreateShortcut "$DESKTOP\Run SlimeVR Server.lnk" "$INSTDIR\run.bat" "" "$INSTDIR\run.ico"
+        CreateShortcut "$SMPROGRAMS\SlimeVR Server.lnk" "$INSTDIR\run.bat" "" "$INSTDIR\run.ico"
+        CreateShortcut "$DESKTOP\SlimeVR Server.lnk" "$INSTDIR\run.bat" "" "$INSTDIR\run.ico"
 
         DetailPrint "Registering installation..."
         WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
@@ -325,8 +325,8 @@ Section "uninstall"
 
     # Remove the shortcuts
     Delete "$SMPROGRAMS\Uninstall SlimeVR Server.lnk"
-    Delete "$SMPROGRAMS\Run SlimeVR Server.lnk"
-    Delete "$DESKTOP\Run SlimeVR Server.lnk"
+    Delete "$SMPROGRAMS\SlimeVR Server.lnk"
+    Delete "$DESKTOP\SlimeVR Server.lnk"
 
     DetailPrint "Removing SlimeVR Server from firewall exceptions...."
     nsExec::Exec '"$INSTDIR\firewall_uninstall.bat"'
