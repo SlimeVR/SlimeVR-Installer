@@ -14,6 +14,7 @@ The NSIS script is powered by the following plugins:
 
 * [NScurl plug-in](https://nsis.sourceforge.io/NScurl_plug-in) - for downloads over HTTP.
 * [Nsisunz plug-in](https://nsis.sourceforge.io/Nsisunz_plug-in) - for zip archives unpacking.
+* [AccessControl plug-in](https://nsis.sourceforge.io/AccessControl_plug-in) - for Windows NT access control list (ACL) management.
 
 ## Building
 

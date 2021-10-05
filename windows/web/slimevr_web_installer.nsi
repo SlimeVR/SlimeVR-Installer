@@ -307,6 +307,11 @@ Section
     # Create the uninstaller
     WriteUninstaller "$INSTDIR\uninstall.exe"
 
+    # Grant all users full access to the installation folder to avoid using elevated rights
+    # when installing to folders with limited access
+    AccessControl::GrantOnFile $INSTDIR "(BU)" "FullAccess"
+    Pop $0
+
     DetailPrint "Done."
 SectionEnd
 # InstFiles section end
