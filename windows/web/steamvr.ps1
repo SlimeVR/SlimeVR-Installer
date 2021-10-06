@@ -7,23 +7,24 @@ param (
 
 # Prune external SlimeVR driver(s) and possibly invalid entries
 $OpenVrConfig = Get-Content -Path "$env:LOCALAPPDATA\openvr\openvrpaths.vrpath" | ConvertFrom-Json
-$DriverPaths = @()
+$ExternalDriverPaths = @()
 if ($OpenVrConfig.external_drivers.Length) {
-    foreach ($DriverPath in $OpenVrConfig.external_drivers) {
-        if (-not (Test-Path -Path "$DriverPath\driver.vrdrivermanifest")) {
+    foreach ($ExternalDriverPath in $OpenVrConfig.external_drivers) {
+        if (-not (Test-Path -Path "$ExternalDriverPath\driver.vrdrivermanifest")) {
+            $ExternalDriverPaths += $ExternalDriverPath
             continue
         }
-        $DriverManifest = Get-Content -Path "$DriverPath\driver.vrdrivermanifest" | ConvertFrom-Json
+        $DriverManifest = Get-Content -Path "$ExternalDriverPath\driver.vrdrivermanifest" | ConvertFrom-Json
         if ($DriverManifest.name -eq "SlimeVR") {
             continue
         }
-        $DriverPaths += $DriverPath
+        $ExternalDriverPaths += $ExternalDriverPath
     }
 }
-if ($DriverPaths.Length -eq 0) {
+if ($ExternalDriverPaths.Length -eq 0) {
     $OpenVrConfig.external_drivers = $null
 } else {
-    $OpenVrConfig.external_drivers = $DriverPaths
+    $OpenVrConfig.external_drivers = $ExternalDriverPaths
 }
 ConvertTo-Json -InputObject $OpenVrConfig | Out-File -FilePath "$env:LOCALAPPDATA\openvr\openvrpaths.vrpath"
 
@@ -33,10 +34,12 @@ $SteamVrPath = "$SteamPath\steamapps\common\SteamVR"
 if ((Test-Path -Path "$SteamVrPath\bin") -eq $true) {
     if ($Uninstall -eq $true) {
         Remove-Item -Recurse -Path "$SteamVrPath\drivers\$DriverFolder"
-        return
+        Write-Host "Deleted SlimeVR Driver from `"$SteamVrPath\drivers`""
+        exit 0
     }
     Copy-Item -Recurse -Force -Path $DriverPath -Destination "$SteamVrPath\drivers"
-    return
+    Write-Host "Copied SlimeVR Driver to `"$SteamVrPath\drivers`""
+    exit 0
 }
 
 # If not, try looking it up in defined library folders
@@ -47,10 +50,12 @@ foreach ($Match in $res.Matches) {
     if ((Test-Path -Path "$SteamVrPath\bin") -eq $true) {
         if ($Uninstall -eq $true) {
             Remove-Item -Recurse -Path "$SteamVrPath\drivers\$DriverFolder"
-            return
+            Write-Host "Deleted SlimeVR Driver from `"$SteamVrPath\drivers`""
+            exit 0
         }
         Copy-Item -Recurse -Force -Path $DriverPath -Destination "$SteamVrPath\drivers"
-        return
+        Write-Host "Copied SlimeVR Driver to `"$SteamVrPath\drivers`""
+        exit 0
     }
 }
 
