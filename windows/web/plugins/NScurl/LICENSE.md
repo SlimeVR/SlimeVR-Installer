@@ -1,4 +1,4 @@
-Copyright (C) 2020 by Marius Negrutiu <marius.negrutiu@protonmail.com>, All rights reserved.
+Copyright (C) 2020 - 2021 , Marius Negrutiu <marius.negrutiu@protonmail.com>. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
