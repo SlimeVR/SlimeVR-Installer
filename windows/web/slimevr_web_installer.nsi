@@ -282,10 +282,9 @@ Section
     DetailPrint "Copying SlimeVR Driver to SteamVR..."
     ${If} $steamVrDirectory == ""
         ${DisableX64FSRedirection}
-        nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Bypass -File "$INSTDIR\steamvr.ps1" -SteamPath "$SteamPath" -DriverPath "$TEMP\slimevr-openvr-driver-win64\slimevr"' $0
+        nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Bypass -File "$INSTDIR\steamvr.ps1" -SteamPath "$STEAMDIR" -DriverPath "$TEMP\slimevr-openvr-driver-win64\slimevr"' $0
         ${EnableX64FSRedirection}
         Pop $0
-        Pop $1
         ${If} $0 != 0
             ${If} $hasExistingInstall == ""
                 Call cleanInstDir
@@ -333,11 +332,9 @@ SectionEnd
 # Uninstaller section start
 Section "uninstall"
     ${DisableX64FSRedirection}
-    nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Bypass -File "$INSTDIR\steamvr.ps1" -SteamPath "$SteamPath" -DriverPath "slimevr" -Uninstall"' $0
+    nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Bypass -File "$INSTDIR\steamvr.ps1" -SteamPath "$STEAMDIR" -DriverPath "slimevr" -Uninstall' $0
     ${EnableX64FSRedirection}
     Pop $0
-    Pop $1
-    DetailPrint $1
 
     # Remove the shortcuts
     RMdir /r "$SMPROGRAMS\SlimeVR Server"
