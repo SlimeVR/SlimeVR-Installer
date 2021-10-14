@@ -1,0 +1,37 @@
+# Workflow based on https://github.com/joncloud/makensis-action-test/blob/publish/.github/workflows/main.yml
+
+name: SlimeVR Windows Web Installer
+
+on: [ push, pull_request ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    env:
+      # The directory of the web installer project
+      WINDOWS_WEB_DIR: ${{ github.workspace }}/windows/web
+      PLUGINS_DIR: ${{ github.workspace }}/NSIS_Plugins
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          
+      - name: Create plugins directory for NSIS
+        run: mkdir -p "${PLUGINS_DIR}" | cp -rl "${WINDOWS_WEB_DIR}/plugins"/*/* "${PLUGINS_DIR}/"
+        shell: bash
+        
+      - name: Create NSIS installer
+        uses: joncloud/makensis-action@v3.6
+        with:
+          script-file: ${{ env.WINDOWS_WEB_DIR }}/slimevr_web_installer.nsi
+          additional-plugin-paths: ${{ env.PLUGINS_DIR }}
+
+      - name: Upload the installer as a build artifact
+        uses: actions/upload-artifact@v2
+        with:
+          # Artifact name
+          name: "slimevr_web_installer" # optional, default is artifact
+          # A file, directory or wildcard pattern that describes what to upload
+          path: ${{ env.WINDOWS_WEB_DIR }}/slimevr_web_installer.exe
