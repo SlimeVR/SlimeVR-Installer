@@ -94,6 +94,7 @@ Function ${un}cleanInstDir
     Delete "$INSTDIR\steamvr.ps1"
     Delete "$INSTDIR\log*"
     Delete "$INSTDIR\*.log"
+    Delete "$INSTDIR\*.lck"
     Delete "$INSTDIR\vrconfig.yml"
     Delete "$INSTDIR\LICENSE"
 
