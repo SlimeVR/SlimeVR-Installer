@@ -82,6 +82,12 @@ Function cleanTemp
     RMDir /r "$TEMP\slimevr_usb_drivers_inst"
 FunctionEnd
 
+Function .onInstFailed
+    ${If} $SELECTED_INSTALLER_ACTION == ""
+        Call cleanInstDir
+    ${Endif}
+FunctionEnd
+
 Function .onGUIEnd
     Call cleanTemp
 FunctionEnd
