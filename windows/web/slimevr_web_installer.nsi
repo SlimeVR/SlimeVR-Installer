@@ -6,6 +6,12 @@ Unicode True
 !include FileFunc.nsh   ; For GetTime function
 !include MUI2.nsh
 
+!define MUI_ICON "run.ico"
+!define MUI_HEADERIMAGE
+!define MUI_HEADERIMAGE_BITMAP "logo.bmp"
+!define MUI_HEADERIMAGE_BITMAP_STRETCH "NoStretchNoCrop"
+!define MUI_HEADERIMAGE_RIGHT
+
 # Define name of installer
 Name "SlimeVR"
 
