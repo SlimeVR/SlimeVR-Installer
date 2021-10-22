@@ -365,8 +365,8 @@ Section
         DetailPrint "Installing CP210x driver..."
         File /r "CP201x\*"
         ${DisableX64FSRedirection}
-        nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "$TEMP\slimevr_usb_drivers_inst\CP201x\silabser.inf"' $0
-        Pop $0
+            nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "$TEMP\slimevr_usb_drivers_inst\CP201x\silabser.inf"' $0
+            Pop $0
         ${EnableX64FSRedirection}
         ${If} $0 == 0
             DetailPrint "Success!"
@@ -383,8 +383,8 @@ Section
         DetailPrint "Installing CH340 driver..."
         File /r "CH341SER\*"
         ${DisableX64FSRedirection}
-        nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "$TEMP\slimevr_usb_drivers_inst\CH341SER\CH341SER.INF"' $0
-        Pop $0
+            nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "$TEMP\slimevr_usb_drivers_inst\CH341SER\CH341SER.INF"' $0
+            Pop $0
         ${EnableX64FSRedirection}
         ${If} $0 == 0
             DetailPrint "Success!"
@@ -393,7 +393,25 @@ Section
         ${ElseIf} $0 == 3010
             DetailPrint "The requested operation completed successfully and a system reboot is required."
         ${Else}
-            Abort "Failed to install CP210x driver. Error code: $0."
+            Abort "Failed to install CH340 driver. Error code: $0."
+        ${Endif}
+
+        # CH343 drivers (for boards with CH9102x)
+        SetOutPath "$TEMP\slimevr_usb_drivers_inst\CH343SER"
+        DetailPrint "Installing CH343/CH910x driver..."
+        File /r "CH343SER\*"
+        ${DisableX64FSRedirection}
+            nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "$TEMP\slimevr_usb_drivers_inst\CH343SER\CH343SER.INF"' $0
+            Pop $0
+        ${EnableX64FSRedirection}
+        ${If} $0 == 0
+            DetailPrint "Success!"
+        ${ElseIf} $0 == 259
+            DetailPrint "No devices match the supplied driver or the target device is already using a better or newer driver than the driver specified for installation."
+        ${ElseIf} $0 == 3010
+            DetailPrint "The requested operation completed successfully and a system reboot is required."
+        ${Else}
+            Abort "Failed to install CH343/CH910x driver. Error code: $0."
         ${Endif}
     ${Endif}
 
