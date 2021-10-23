@@ -39,7 +39,7 @@ foreach ($Match in $res.Matches) {
     $SteamVrPaths += "$LibraryPath\steamapps\common\SteamVR"
 }
 
-Write-Host "Attempting to find SteamVR and install SlimeVR Driver..."
+Write-Host "Attempting to find SteamVR..."
 $DriverFolder = Split-Path -Path $DriverPath -Leaf
 foreach ($SteamVrPath in $SteamVrPaths) {
     if (Test-Path -Path "$SteamVrPath\bin") {

@@ -1,0 +1,223 @@
+; CH343SER.INF
+; Driver for CH342/CH343/CH910X (USB=>ENHANCED SERIAL CHIP) V1.5
+; DRIVER for Windows 2000/XP/Vista/7/8/8.1/10/SERVER 2003/2008/2012/2016/2019
+; Copyright (C) WCH 2001-2021
+;
+
+[Version]
+Signature   = "$Chicago$"
+Class       = Ports
+ClassGuid   = {4D36E978-E325-11CE-BFC1-08002BE10318}
+Provider    = %WinChipHead%
+DriverVer   = 08/08/2021, 1.5.2021.8
+CatalogFile = CH343SER.CAT
+
+[ControlFlags]
+ExcludeFromSelect = USB\VID_1A86&PID_55D2&MI_00
+ExcludeFromSelect = USB\VID_1A86&PID_55D2&MI_02
+ExcludeFromSelect = USB\VID_1A86&PID_55D3
+ExcludeFromSelect = USB\VID_1A86&PID_55D5&MI_00
+ExcludeFromSelect = USB\VID_1A86&PID_55D5&MI_02
+ExcludeFromSelect = USB\VID_1A86&PID_55D5&MI_04
+ExcludeFromSelect = USB\VID_1A86&PID_55D5&MI_06
+ExcludeFromSelect = USB\VID_1A86&PID_55D8
+ExcludeFromSelect = USB\VID_1A86&PID_55D4
+ExcludeFromSelect = USB\VID_1A86&PID_55D7&MI_00
+ExcludeFromSelect = USB\VID_1A86&PID_55D7&MI_02
+ExcludeFromSelect = USB\VID_1A86&PID_55D6
+
+[Manufacturer]
+%WinChipHead% = WinChipHead,NT,NTamd64,NTia64
+
+[WinChipHead]
+%CH342SERM0.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D2&MI_00
+%CH342SERM1.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D2&MI_02
+%CH343SER.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D3
+%CH344SERM0.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D5&MI_00
+%CH344SERM1.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D5&MI_02
+%CH344SERM2.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D5&MI_04
+%CH344SERM3.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D5&MI_06
+%CH9101SER.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D8
+%CH9102SER.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D4
+%CH9103SERM0.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D7&MI_00
+%CH9103SERM1.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D7&MI_02
+%CH9143SER.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D6
+
+[WinChipHead.NT]
+%CH342SERM0.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D2&MI_00
+%CH342SERM1.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D2&MI_02
+%CH343SER.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D3
+%CH344SERM0.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D5&MI_00
+%CH344SERM1.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D5&MI_02
+%CH344SERM2.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D5&MI_04
+%CH344SERM3.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D5&MI_06
+%CH9101SER.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D8
+%CH9102SER.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D4
+%CH9103SERM0.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D7&MI_00
+%CH9103SERM1.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D7&MI_02
+%CH9143SER.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D6
+
+[WinChipHead.NTamd64]
+%CH342SERM0.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D2&MI_00
+%CH342SERM1.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D2&MI_02
+%CH343SER.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D3
+%CH344SERM0.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D5&MI_00
+%CH344SERM1.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D5&MI_02
+%CH344SERM2.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D5&MI_04
+%CH344SERM3.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D5&MI_06
+%CH9101SER.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D8
+%CH9102SER.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D4
+%CH9103SERM0.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D7&MI_00
+%CH9103SERM1.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D7&MI_02
+%CH9143SER.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D6
+
+[WinChipHead.NTia64]
+%CH342SERM0.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D2&MI_00
+%CH342SERM1.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D2&MI_02
+%CH343SER.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D3
+%CH344SERM0.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D5&MI_00
+%CH344SERM1.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D5&MI_02
+%CH344SERM2.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D5&MI_04
+%CH344SERM3.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D5&MI_06
+%CH9101SER.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D8
+%CH9102SER.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D4
+%CH9103SERM0.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D7&MI_00
+%CH9103SERM1.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D7&MI_02
+%CH9143SER.DeviceDesc% = CH343SER_Inst, USB\VID_1A86&PID_55D6
+
+[CH343SER_Inst.NT]
+CopyFiles = CH343SER.NT.CopyFiles.SYS, CH343SER.CopyFiles.DLL
+AddReg    = CH343SER.NT.AddReg, CH343SER.AddReg
+
+[CH343SER_Inst.NT.HW]
+AddReg    = CH343SER.NT.HW.AddReg
+
+[CH343SER_Inst.NTamd64]
+CopyFiles = CH343SER.NT.CopyFiles.SYSA64, CH343SER.CopyFiles.DLLA64
+AddReg    = CH343SER.NTamd64.AddReg, CH343SER.AddReg
+
+[CH343SER_Inst.NTamd64.HW]
+AddReg    = CH343SER.NT.HW.AddReg
+
+[CH343SER_Inst.NTia64]
+CopyFiles = CH343SER.NT.CopyFiles.SYSI64
+AddReg    = CH343SER.NT.AddReg, CH343SER.AddReg
+
+[CH343SER_Inst.NTia64.HW]
+AddReg    = CH343SER.NT.HW.AddReg
+
+[CH343SER.NT.CopyFiles.SYS]
+CH343SER.SYS, , , 2
+
+[CH343SER.NT.CopyFiles.SYSA64]
+CH343S64.SYS, , , 2
+
+[CH343SER.NT.CopyFiles.SYSI64]
+;CH343I64.SYS, , , 2
+
+[CH343SER.CopyFiles.DLL]
+CH343PT.DLL, , , 2
+CH343PORTS.DLL, , , 2
+
+[CH343SER.CopyFiles.DLLA64]
+CH343PT.DLL, , , 2
+CH343PORTSA64.DLL, , , 2
+;安装DLL是可选的,DLL可以用于识别CH340/1/2/3、CH9102端口、监视CH341端口的插拔事件和GPIO操作
+
+[CH343SER.NT.AddReg]
+HKR,,EnumPropPages32,,"CH343PORTS.dll,SerialPortPropPageProvider"
+
+[CH343SER.NTamd64.AddReg]
+HKR,,EnumPropPages32,,"CH343PORTSA64.dll,SerialPortPropPageProvider"
+
+[CH343SER.NT.HW.AddReg]
+;HKR,,"UpperFilters",0x00010000,"serenum"
+;上面这行用于枚举接在串口的即插即用设备,启动时将产生DTR和RTS信号,如果需要枚举,请将上面这行的分号去掉
+
+[CH343SER.AddReg]
+HKLM, SOFTWARE\WinChipHead\IC\CH343SER, WDM, 0x00010001, 0x00000034
+HKLM, SOFTWARE\WinChipHead\IC\CH341PORT, DLL, 0x00010001, 0x00000010
+HKLM, SOFTWARE\WinChipHead\IC\CH343SER, Function, , "USB=>Serial"
+;HKLM, SYSTEM\CurrentControlSet\Services\CH343SER, UserRemoval, 0x00010001, 0x00000001
+;上面这行用于在系统托盘中显示“安全删除USB转SERIAL硬件设备”，便于用户手工删除硬件
+
+[CH343SER_Inst.NT.Services]
+AddService = CH343SER, 2, CH343SER.Service
+AddService = Serenum, , Serenum_Service_Inst
+
+[CH343SER_Inst.NTamd64.Services]
+AddService = CH343SER_A64, 2, CH343SER.ServiceA64
+AddService = Serenum, , Serenum_Service_Inst
+
+[CH343SER_Inst.NTia64.Services]
+AddService = CH343SER_I64, 2, CH343SER.ServiceI64
+AddService = Serenum, , Serenum_Service_Inst
+
+[CH343SER.Service]
+DisplayName   = "CH343SER"
+ServiceType   = 1
+StartType     = 3
+ErrorControl  = 1
+ServiceBinary = %10%\System32\Drivers\CH343SER.SYS
+
+[CH343SER.ServiceA64]
+DisplayName   = "CH343SER_A64"
+ServiceType   = 1
+StartType     = 3
+ErrorControl  = 1
+ServiceBinary = %10%\System32\Drivers\CH343S64.SYS
+
+[CH343SER.ServiceI64]
+DisplayName   = "CH343SER_I64"
+ServiceType   = 1
+StartType     = 3
+ErrorControl  = 1
+ServiceBinary = %10%\System32\Drivers\CH343I64.SYS
+
+[Serenum_Service_Inst]
+DisplayName    = "SerEnum"
+ServiceType    = 1
+StartType      = 3
+ErrorControl   = 1
+ServiceBinary  = %12%\serenum.sys
+LoadOrderGroup = PNP Filter
+
+[DestinationDirs]
+DefaultDestDir      = 10, System32\Drivers
+CH343SER.NT.CopyFiles.SYS = 10, System32\Drivers
+CH343SER.CopyFiles.DLL = 11
+CH343SER.CopyFiles.DLLA64 = 11
+CH343SER.NT.CopyFiles.SYSA64 = 10, System32\Drivers
+
+[SourceDisksFiles]
+CH343SER.SYS  = 1
+CH343PT.DLL   = 1
+CH343S64.SYS  = 1
+CH343PORTS.DLL   = 1
+CH343PORTSA64.DLL  = 1
+
+[SourceDisksNames]
+1 = %DISK_NAME%, , ,
+
+[SourceDisksNames.amd64]
+1 = %DISK_NAME%, , ,
+
+[SourceDisksNames.ia64]
+1 = %DISK_NAME%, , ,
+
+[Strings]
+WinChipHead      = "wch.cn"
+CH342SERM0.DeviceDesc = "USB-Enhanced-SERIAL-A CH342"
+CH342SERM1.DeviceDesc = "USB-Enhanced-SERIAL-B CH342"
+CH343SER.DeviceDesc =  "USB-Enhanced-SERIAL CH343"
+CH344SERM0.DeviceDesc = "USB-Enhanced-SERIAL-A CH344"
+CH344SERM1.DeviceDesc = "USB-Enhanced-SERIAL-B CH344"
+CH344SERM2.DeviceDesc = "USB-Enhanced-SERIAL-C CH344"
+CH344SERM3.DeviceDesc = "USB-Enhanced-SERIAL-D CH344"
+CH9101SER.DeviceDesc = "USB-Enhanced-SERIAL CH9101"
+CH9102SER.DeviceDesc = "USB-Enhanced-SERIAL CH9102"
+CH9103SERM0.DeviceDesc = "USB-Enhanced-SERIAL-A CH9103"
+CH9103SERM1.DeviceDesc = "USB-Enhanced-SERIAL-B CH9103"
+CH9143SER.DeviceDesc = "USB-BLE-SERIAL CH9143"
+DISK_NAME = "CH34X&CH910X USB To Serial Installation Disk"
+
