@@ -230,9 +230,11 @@ FunctionEnd
 
 Function endPageLeave
 
-  ${NSD_GetState} $CREATE_DESKTOP_SHORTCUT $0
-  ${NSD_GetState} $CREATE_STARTMENU_SHORTCUTS $1
-  ${NSD_GetState} $OPEN_DOCUMENTATION $2
+    SetOutPath $INSTDIR
+
+    ${NSD_GetState} $CREATE_DESKTOP_SHORTCUT $0
+    ${NSD_GetState} $CREATE_STARTMENU_SHORTCUTS $1
+    ${NSD_GetState} $OPEN_DOCUMENTATION $2
 
     ${If} $0 = 1
         CreateDirectory "$SMPROGRAMS\SlimeVR Server"
