@@ -114,8 +114,9 @@ Function ${un}cleanInstDir
     Delete "$INSTDIR\*.log"
     Delete "$INSTDIR\*.lck"
     Delete "$INSTDIR\vrconfig.yml"
-    Delete "$INSTDIR\LICENSE"
+    Delete "$INSTDIR\LICENSE*"
 
+    RMDir /r "$INSTDIR\Recordings"
     RMdir /r "$INSTDIR\jre"
     RMdir /r "$INSTDIR\driver"
     RMDir /r "$INSTDIR\logs"
