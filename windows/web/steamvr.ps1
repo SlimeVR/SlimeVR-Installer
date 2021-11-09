@@ -10,10 +10,10 @@ $OpenVrConfigPath = "$env:LOCALAPPDATA\openvr\openvrpaths.vrpath"
 $OpenVrConfig = Get-Content -Path $OpenVrConfigPath -Encoding utf8 | ConvertFrom-Json
 Write-Host "Checking `"$OpenVrConfigPath`" for SlimeVR Drivers..."
 $ExternalDriverPaths = @()
-if ($OpenVrConfig.external_drivers.Length) {
+if ($OpenVrConfig.external_drivers -and $OpenVrConfig.external_drivers.Length) {
     foreach ($ExternalDriverPath in $OpenVrConfig.external_drivers) {
         if (-not (Test-Path -Path "$ExternalDriverPath\driver.vrdrivermanifest")) {
-            Write-Host "VR driver path `"$ExternalDriverPath`" has no manifest. Skipping..."
+            Write-Host "VR driver path `"$ExternalDriverPath`" has no manifest."
             $ExternalDriverPaths += $ExternalDriverPath
             continue
         }
@@ -37,18 +37,20 @@ if ($Uninstall -eq $true) {
     $SteamVrSettingsPath = "$SteamPath\config\steamvr.vrsettings"
     Write-Host "Removing trackers from `"$SteamVrSettingsPath`""
     $SteamVrSettings = Get-Content -Path $SteamVrSettingsPath -Encoding utf8 | ConvertFrom-Json
-    $SettingsTrackers = $SteamVrSettings.trackers.PSObject.Properties
-    $Trackers = New-Object -TypeName PSCustomObject
-    if ($SettingsTrackers.Value.Count) {
-        foreach ($Tracker in $SettingsTrackers) {
-            if ($Tracker.Name -match "^/devices/slimevr/") {
-                continue
+    if ($SteamVrSettings.trackers) {
+        $SettingsTrackers = $SteamVrSettings.trackers.PSObject.Properties
+        $Trackers = New-Object -TypeName PSCustomObject
+        if ($SettingsTrackers.Value.Count) {
+            foreach ($Tracker in $SettingsTrackers) {
+                if ($Tracker.Name -match "^/devices/slimevr/") {
+                    continue
+                }
+                Add-Member -InputObject $Trackers -MemberType NoteProperty -Name $Tracker.Name -Value $Tracker.Value
             }
-            Add-Member -InputObject $Trackers -MemberType NoteProperty -Name $Tracker.Name -Value $Tracker.Value
         }
+        $SteamVrSettings.trackers = $Trackers
+        [System.IO.File]::WriteAllLines($SteamVrSettingsPath, (ConvertTo-Json -InputObject $SteamVrSettings))
     }
-    $SteamVrSettings.trackers = $Trackers
-    [System.IO.File]::WriteAllLines($SteamVrSettingsPath, (ConvertTo-Json -InputObject $SteamVrSettings))
 }
 
 $SteamVrPaths = @("$SteamPath\steamapps\common\SteamVR")
