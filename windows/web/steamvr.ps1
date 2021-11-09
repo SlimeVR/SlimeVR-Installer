@@ -32,6 +32,25 @@ if ($ExternalDriverPaths.Length -eq 0) {
 }
 [System.IO.File]::WriteAllLines($OpenVrConfigPath, (ConvertTo-Json -InputObject $OpenVrConfig))
 
+# Remove trackers on uninstall
+if ($Uninstall -eq $true) {
+    $SteamVrSettingsPath = "$SteamPath\config\steamvr.vrsettings"
+    Write-Host "Removing trackers from `"$SteamVrSettingsPath`""
+    $SteamVrSettings = Get-Content -Path $SteamVrSettingsPath -Encoding utf8 | ConvertFrom-Json
+    $SettingsTrackers = $SteamVrSettings.trackers.PSObject.Properties
+    $Trackers = New-Object -TypeName PSCustomObject
+    if ($SettingsTrackers.Value.Count) {
+        foreach ($Tracker in $SettingsTrackers) {
+            if ($Tracker.Name -match "^/devices/slimevr/") {
+                continue
+            }
+            Add-Member -InputObject $Trackers -MemberType NoteProperty -Name $Tracker.Name -Value $Tracker.Value
+        }
+    }
+    $SteamVrSettings.trackers = $Trackers
+    [System.IO.File]::WriteAllLines($SteamVrSettingsPath, (ConvertTo-Json -InputObject $SteamVrSettings))
+}
+
 $SteamVrPaths = @("$SteamPath\steamapps\common\SteamVR")
 $res = Select-String -Path "$SteamPath\steamapps\libraryfolders.vdf" -Pattern '"path"\s+"(.+?)"' -AllMatches
 foreach ($Match in $res.Matches) {
