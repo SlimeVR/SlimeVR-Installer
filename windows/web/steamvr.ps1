@@ -7,7 +7,7 @@ param (
 
 # Prune external SlimeVR driver(s)
 $OpenVrConfigPath = "$env:LOCALAPPDATA\openvr\openvrpaths.vrpath"
-$OpenVrConfig = Get-Content -Path $OpenVrConfigPath | ConvertFrom-Json
+$OpenVrConfig = Get-Content -Path $OpenVrConfigPath -Encoding utf8 | ConvertFrom-Json
 Write-Host "Checking `"$OpenVrConfigPath`" for SlimeVR Drivers..."
 $ExternalDriverPaths = @()
 if ($OpenVrConfig.external_drivers.Length) {
@@ -17,7 +17,7 @@ if ($OpenVrConfig.external_drivers.Length) {
             $ExternalDriverPaths += $ExternalDriverPath
             continue
         }
-        $DriverManifest = Get-Content -Path "$ExternalDriverPath\driver.vrdrivermanifest" | ConvertFrom-Json
+        $DriverManifest = Get-Content -Path "$ExternalDriverPath\driver.vrdrivermanifest" -Encoding utf8 | ConvertFrom-Json
         if ($DriverManifest.name -eq "SlimeVR") {
             Write-Host "Found external SlimeVR Driver in `"$ExternalDriverPath`". Removing..."
             continue
@@ -30,7 +30,7 @@ if ($ExternalDriverPaths.Length -eq 0) {
 } else {
     $OpenVrConfig.external_drivers = $ExternalDriverPaths
 }
-ConvertTo-Json -InputObject $OpenVrConfig | Out-File -FilePath "$env:LOCALAPPDATA\openvr\openvrpaths.vrpath"
+[System.IO.File]::WriteAllLines($OpenVrConfigPath, (ConvertTo-Json -InputObject $OpenVrConfig))
 
 $SteamVrPaths = @("$SteamPath\steamapps\common\SteamVR")
 $res = Select-String -Path "$SteamPath\steamapps\libraryfolders.vdf" -Pattern '"path"\s+"(.+?)"' -AllMatches
