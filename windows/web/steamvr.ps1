@@ -7,17 +7,17 @@ param (
 
 # Prune external SlimeVR driver(s)
 $OpenVrConfigPath = "$env:LOCALAPPDATA\openvr\openvrpaths.vrpath"
-$OpenVrConfig = Get-Content -Path $OpenVrConfigPath | ConvertFrom-Json
+$OpenVrConfig = Get-Content -Path $OpenVrConfigPath -Encoding utf8 | ConvertFrom-Json
 Write-Host "Checking `"$OpenVrConfigPath`" for SlimeVR Drivers..."
 $ExternalDriverPaths = @()
-if ($OpenVrConfig.external_drivers.Length) {
+if ($OpenVrConfig.external_drivers -and $OpenVrConfig.external_drivers.Length) {
     foreach ($ExternalDriverPath in $OpenVrConfig.external_drivers) {
         if (-not (Test-Path -Path "$ExternalDriverPath\driver.vrdrivermanifest")) {
-            Write-Host "VR driver path `"$ExternalDriverPath`" has no manifest. Skipping..."
+            Write-Host "VR driver path `"$ExternalDriverPath`" has no manifest."
             $ExternalDriverPaths += $ExternalDriverPath
             continue
         }
-        $DriverManifest = Get-Content -Path "$ExternalDriverPath\driver.vrdrivermanifest" | ConvertFrom-Json
+        $DriverManifest = Get-Content -Path "$ExternalDriverPath\driver.vrdrivermanifest" -Encoding utf8 | ConvertFrom-Json
         if ($DriverManifest.name -eq "SlimeVR") {
             Write-Host "Found external SlimeVR Driver in `"$ExternalDriverPath`". Removing..."
             continue
@@ -30,7 +30,30 @@ if ($ExternalDriverPaths.Length -eq 0) {
 } else {
     $OpenVrConfig.external_drivers = $ExternalDriverPaths
 }
-ConvertTo-Json -InputObject $OpenVrConfig | Out-File -FilePath "$env:LOCALAPPDATA\openvr\openvrpaths.vrpath"
+[System.IO.File]::WriteAllLines($OpenVrConfigPath, (ConvertTo-Json -InputObject $OpenVrConfig))
+
+# Remove trackers on uninstall
+if ($Uninstall -eq $true) {
+    $SteamVrSettingsPath = "$SteamPath\config\steamvr.vrsettings"
+    Write-Host "Removing trackers from `"$SteamVrSettingsPath`""
+    $SteamVrSettings = (Get-Content -Path $SteamVrSettingsPath -Encoding utf8) -creplace "/devices/SlimeVR/", "/devices/SlimeVR1/" | ConvertFrom-Json
+    # Remove "driver_SlimeVR" entry if the driver was disabled manually
+    $SteamVrSettings.PSObject.Properties.Remove("driver_SlimeVR")
+    if ($SteamVrSettings.trackers) {
+        $SettingsTrackers = $SteamVrSettings.trackers.PSObject.Properties
+        $Trackers = New-Object -TypeName PSCustomObject
+        if ($SettingsTrackers.Value.Count) {
+            foreach ($Tracker in $SettingsTrackers) {
+                if ($Tracker.Name -match "^/devices/slimevr(1)?/") {
+                    continue
+                }
+                Add-Member -InputObject $Trackers -MemberType NoteProperty -Name $Tracker.Name -Value $Tracker.Value
+            }
+        }
+        $SteamVrSettings.trackers = $Trackers
+        [System.IO.File]::WriteAllLines($SteamVrSettingsPath, (ConvertTo-Json -InputObject $SteamVrSettings))
+    }
+}
 
 $SteamVrPaths = @("$SteamPath\steamapps\common\SteamVR")
 $res = Select-String -Path "$SteamPath\steamapps\libraryfolders.vdf" -Pattern '"path"\s+"(.+?)"' -AllMatches
