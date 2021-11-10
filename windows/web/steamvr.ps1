@@ -36,13 +36,13 @@ if ($ExternalDriverPaths.Length -eq 0) {
 if ($Uninstall -eq $true) {
     $SteamVrSettingsPath = "$SteamPath\config\steamvr.vrsettings"
     Write-Host "Removing trackers from `"$SteamVrSettingsPath`""
-    $SteamVrSettings = Get-Content -Path $SteamVrSettingsPath -Encoding utf8 | ConvertFrom-Json
+    $SteamVrSettings = (Get-Content -Path $SteamVrSettingsPath -Encoding utf8) -creplace "/devices/SlimeVR/", "/devices/SlimeVR1/" | ConvertFrom-Json
     if ($SteamVrSettings.trackers) {
         $SettingsTrackers = $SteamVrSettings.trackers.PSObject.Properties
         $Trackers = New-Object -TypeName PSCustomObject
         if ($SettingsTrackers.Value.Count) {
             foreach ($Tracker in $SettingsTrackers) {
-                if ($Tracker.Name -match "^/devices/slimevr/") {
+                if ($Tracker.Name -match "^/devices/slimevr(1)?/") {
                     continue
                 }
                 Add-Member -InputObject $Trackers -MemberType NoteProperty -Name $Tracker.Name -Value $Tracker.Value
