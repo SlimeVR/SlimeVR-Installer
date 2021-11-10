@@ -37,6 +37,8 @@ if ($Uninstall -eq $true) {
     $SteamVrSettingsPath = "$SteamPath\config\steamvr.vrsettings"
     Write-Host "Removing trackers from `"$SteamVrSettingsPath`""
     $SteamVrSettings = (Get-Content -Path $SteamVrSettingsPath -Encoding utf8) -creplace "/devices/SlimeVR/", "/devices/SlimeVR1/" | ConvertFrom-Json
+    # Remove "driver_SlimeVR" entry if the driver was disabled manually
+    $SteamVrSettings.PSObject.Properties.Remove("driver_SlimeVR")
     if ($SteamVrSettings.trackers) {
         $SettingsTrackers = $SteamVrSettings.trackers.PSObject.Properties
         $Trackers = New-Object -TypeName PSCustomObject
