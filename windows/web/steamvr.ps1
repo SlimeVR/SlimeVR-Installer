@@ -5,6 +5,9 @@ param (
     [parameter(Position=2)][switch]$Uninstall = $false
 )
 
+# Required for System.Web.Script.Serialization.JavaScriptSerializer
+[void][System.Reflection.Assembly]::LoadWithPartialName("System.Web.Extensions")
+
 # Prune external SlimeVR driver(s)
 $OpenVrConfigPath = "$env:LOCALAPPDATA\openvr\openvrpaths.vrpath"
 $OpenVrConfig = Get-Content -Path $OpenVrConfigPath -Encoding utf8 | ConvertFrom-Json
@@ -36,23 +39,27 @@ if ($ExternalDriverPaths.Length -eq 0) {
 if ($Uninstall -eq $true) {
     $SteamVrSettingsPath = "$SteamPath\config\steamvr.vrsettings"
     Write-Host "Removing trackers from `"$SteamVrSettingsPath`""
-    $SteamVrSettings = (Get-Content -Path $SteamVrSettingsPath -Encoding utf8) -creplace "/devices/SlimeVR/", "/devices/SlimeVR1/" | ConvertFrom-Json
+    $SteamVrSettingsContent = Get-Content -Path $SteamVrSettingsPath -Encoding utf8
+    $JsonSerializer = New-Object -TypeName "System.Web.Script.Serialization.JavaScriptSerializer" -Property @{MaxJsonLength = [System.Int32]::MaxValue}
+    $SteamVrSettings = $JsonSerializer.DeserializeObject($SteamVrSettingsContent)
+
     # Remove "driver_SlimeVR" entry if the driver was disabled manually
-    $SteamVrSettings.PSObject.Properties.Remove("driver_SlimeVR")
-    if ($SteamVrSettings.trackers) {
-        $SettingsTrackers = $SteamVrSettings.trackers.PSObject.Properties
-        $Trackers = New-Object -TypeName PSCustomObject
-        if ($SettingsTrackers.Value.Count) {
-            foreach ($Tracker in $SettingsTrackers) {
-                if ($Tracker.Name -match "^/devices/slimevr(1)?/") {
-                    continue
-                }
-                Add-Member -InputObject $Trackers -MemberType NoteProperty -Name $Tracker.Name -Value $Tracker.Value
+    $SteamVrSettings.Remove("driver_SlimeVR")
+
+    if ($SteamVrSettings.trackers -and $SteamVrSettings.trackers.Count) {
+        $Trackers = New-Object -TypeName "System.Collections.Generic.Dictionary[[string], [object]]"
+        foreach ($Tracker in $SteamVrSettings.trackers.GetEnumerator()) {
+            if ($Tracker.Key -match "^/devices/slimevr/") {
+                continue
             }
+            $Trackers[$Tracker.Key] = $Tracker.Value
         }
-        $SteamVrSettings.trackers = $Trackers
-        [System.IO.File]::WriteAllLines($SteamVrSettingsPath, (ConvertTo-Json -InputObject $SteamVrSettings))
+        # Why? Because you cannot just replace key value without a circular reference error
+        $SteamVrSettings.Remove('trackers')
+        $SteamVrSettings.Add('trackers', $Trackers)
     }
+
+    [System.IO.File]::WriteAllLines($SteamVrSettingsPath, $JsonSerializer.Serialize($SteamVrSettings))
 }
 
 $SteamVrPaths = @("$SteamPath\steamapps\common\SteamVR")
