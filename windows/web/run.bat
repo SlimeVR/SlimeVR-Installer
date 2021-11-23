@@ -1,1 +1,4 @@
-@jre\bin\java.exe -Xmx512M -jar slimevr.jar
+@echo off
+setlocal enableextensions
+cd /d "%~dp0"
+jre\bin\java.exe -Xmx512M -jar slimevr.jar
