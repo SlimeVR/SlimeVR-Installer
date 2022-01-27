@@ -246,7 +246,7 @@ Function endPageLeave
         CreateShortcut "$DESKTOP\SlimeVR Server.lnk" "$INSTDIR\run.bat" "" "$INSTDIR\run.ico"
     ${EndIf}
     ${If} $2 = 1
-        ExecShell "open" "https://docs.slimevr.dev/slimevr-setup.html"
+        ExecShell "open" "https://docs.slimevr.dev/server-setup/slimevr-setup.html"
     ${EndIf}
 
 FunctionEnd
