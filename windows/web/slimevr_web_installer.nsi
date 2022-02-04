@@ -82,12 +82,12 @@ FunctionEnd
 Function cleanTemp
     Delete "$TEMP\slimevr-openvr-driver-win64.zip"
     Delete "$TEMP\SlimeVR.zip"
-    Delete "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.12_7.zip"
-    Delete "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.12_7.zip"
+    Delete "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.14_9.zip"
+    Delete "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.14_9.zip"
     RMDir /r "$TEMP\slimevr-openvr-driver-win64"
     RMDir /r "$TEMP\SlimeVR"
-    RMDir /r "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.12_7"
-    RMDir /r "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.12_7"
+    RMDir /r "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.14_9"
+    RMDir /r "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.14_9"
     RMDir /r "$TEMP\slimevr_usb_drivers_inst"
 FunctionEnd
 
@@ -348,11 +348,11 @@ Section "-" SEC_JRE
     Var /GLOBAL DownloadedJreFile
     DetailPrint "Downloading Java JRE..."
     ${If} ${RunningX64}
-        NScurl::http GET "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.12%2B7/OpenJDK11U-jre_x64_windows_hotspot_11.0.12_7.zip" "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.12_7.zip" /CANCEL /RESUME /END
-        StrCpy $DownloadedJreFile "OpenJDK11U-jre_x64_windows_hotspot_11.0.12_7"
+        NScurl::http GET "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.14%2B9/OpenJDK11U-jre_x64_windows_hotspot_11.0.14_9.zip" "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.14_9.zip" /CANCEL /RESUME /END
+        StrCpy $DownloadedJreFile "OpenJDK11U-jre_x64_windows_hotspot_11.0.14_9"
     ${Else}
-        NScurl::http GET "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.12%2B7/OpenJDK11U-jre_x86-32_windows_hotspot_11.0.12_7.zip" "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.12_7.zip" /CANCEL /RESUME /END
-        StrCpy $DownloadedJreFile "OpenJDK11U-jre_x86-32_windows_hotspot_11.0.12_7"
+        NScurl::http GET "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.14%2B9/OpenJDK11U-jre_x86-32_windows_hotspot_11.0.14_9.zip" "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.14_9.zip" /CANCEL /RESUME /END
+        StrCpy $DownloadedJreFile "OpenJDK11U-jre_x86-32_windows_hotspot_11.0.14_9"
     ${EndIf}
     Pop $0 ; Status text ("OK" for success)
     ${If} $0 != "OK"
@@ -364,7 +364,7 @@ Section "-" SEC_JRE
     nsisunz::Unzip "$TEMP\$DownloadedJreFile.zip" "$TEMP\$DownloadedJreFile\"
     Pop $0
     DetailPrint "Unzipping finished with $0."
-    CopyFiles /SILENT "$TEMP\$DownloadedJreFile\jdk-11.0.12+7-jre\*" "$INSTDIR\jre"
+    CopyFiles /SILENT "$TEMP\$DownloadedJreFile\jdk-11.0.14+9-jre\*" "$INSTDIR\jre"
 SectionEnd
 
 Section "SlimeVR Server" SEC_SERVER
