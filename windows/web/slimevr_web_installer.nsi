@@ -56,6 +56,7 @@ Var STEAMVRDIR_DEST
 # Init functions start #
 # Detect Steam installation and prevent installation if none found
 Function .onInit
+    InitPluginsDir
     ${If} ${RunningX64}
         ReadRegStr $0 HKLM SOFTWARE\WOW6432Node\Valve\Steam InstallPath
     ${Else}
