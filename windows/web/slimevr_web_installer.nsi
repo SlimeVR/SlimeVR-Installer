@@ -420,7 +420,7 @@ Section "SlimeVR Driver" SEC_VRDRIVER
         ${EnableX64FSRedirection}
         Pop $0
         ${If} $0 != 0
-            Abort "Failed to copy SlimeVR Driver. Make sure you have SteamVR installed."
+            Abort "Failed to copy SlimeVR Driver."
         ${EndIf}
     ${Else}
         CopyFiles /SILENT "$TEMP\slimevr-openvr-driver-win64\slimevr" "$STEAMVRDIR\drivers\slimevr"
