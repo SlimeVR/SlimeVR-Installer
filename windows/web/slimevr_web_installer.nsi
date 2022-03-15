@@ -565,7 +565,6 @@ Function componentsPre
         SectionSetFlags ${SEC_JRE} 0
         SectionSetFlags ${SEC_REGISTERAPP} 0
         SectionSetFlags ${SEC_USBDRIVERS} ${SF_SECGRP}
-        Abort
     ${EndIf}
 FunctionEnd
 
