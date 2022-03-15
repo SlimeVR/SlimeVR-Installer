@@ -102,8 +102,7 @@ Function .onGUIEnd
     Call cleanTemp
 FunctionEnd
 
-!macro cleanInstDir un
-Function ${un}cleanInstDir
+Function cleanInstDir
     Delete "$INSTDIR\uninstall.exe"
     Delete "$INSTDIR\run.bat"
     Delete "$INSTDIR\run.ico"
@@ -121,13 +120,10 @@ Function ${un}cleanInstDir
     RMdir /r "$INSTDIR\jre"
     RMdir /r "$INSTDIR\driver"
     RMDir /r "$INSTDIR\logs"
+    RMdir /r "$INSTDIR\Feeder-App"
 
     RMDir $INSTDIR
 FunctionEnd
-!macroend
-
-!insertmacro cleanInstDir ""
-!insertmacro cleanInstDir "un."
 # Init functions end #
 
 Page Custom startPage startPageLeave
@@ -431,6 +427,29 @@ Section "SlimeVR Driver" SEC_VRDRIVER
     ${Endif}
 SectionEnd
 
+Section "SlimeVR Feeder App" SEC_FEEDER_APP
+    SetOutPath $INSTDIR
+
+    DetailPrint "Downloading SlimeVR Feeder App..."
+    NScurl::http GET "https://github.com/SlimeVR/SlimeVR-OpenVR-Driver/releases/download/v0.1.1/SlimeVR-Feeder-App-win64.zip" "$TEMP\SlimeVR-Feeder-App-win64.zip" /CANCEL /RESUME /END
+    Pop $0 ; Status text ("OK" for success)
+    ${If} $0 != "OK"
+        Abort "Failed to download SlimeVR Feeder App. Reason: $0."
+    ${EndIf}
+    DetailPrint "Downloaded!"
+
+    DetailPrint "Unpacking downloaded files..."
+    nsisunz::Unzip "$TEMP\SlimeVR-Feeder-App-win64.zip" "$TEMP"
+    Pop $0
+    DetailPrint "Unzipping finished with $0."
+
+    DetailPrint "Copying SlimeVR Feeder App..."
+    CopyFiles /SILENT "$TEMP\SlimeVR-Feeder-App-win64\*" "$INSTDIR\Feeder-App"
+
+    DetailPrint "Installing SlimeVR Feeder App driver..."
+    nsExec::ExecToLog '"$INSTDIR\Feeder-App\SlimeVR-Feeder-App.exe" --install'
+SectionEnd
+
 SectionGroup "USB drivers" SEC_USBDRIVERS
 
     Section "CP210x driver" SEC_CP210X
@@ -550,13 +569,7 @@ Function componentsPre
     ${EndIf}
 FunctionEnd
 
-# Uninstaller section start
-Section "uninstall"
-    ${DisableX64FSRedirection}
-    nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Bypass -File "$INSTDIR\steamvr.ps1" -SteamPath "$STEAMDIR" -DriverPath "slimevr" -Uninstall' $0
-    ${EnableX64FSRedirection}
-    Pop $0
-
+Section "-un.SlimeVR Server" un.SEC_SERVER
     # Remove the shortcuts
     RMdir /r "$SMPROGRAMS\SlimeVR Server"
     # Remove separate shortcuts introduced with first release
@@ -564,21 +577,67 @@ Section "uninstall"
     Delete "$SMPROGRAMS\SlimeVR Server.lnk"
     Delete "$DESKTOP\SlimeVR Server.lnk"
 
+    Delete "$INSTDIR\run.bat"
+    Delete "$INSTDIR\run.ico"
+    Delete "$INSTDIR\slimevr.jar"
+    Delete "$INSTDIR\MagnetoLib.dll"
+    Delete "$INSTDIR\log*"
+    Delete "$INSTDIR\*.log"
+    Delete "$INSTDIR\*.lck"
+    Delete "$INSTDIR\vrconfig.yml"
+    Delete "$INSTDIR\LICENSE*"
+
+    RMDir /r "$INSTDIR\Recordings"
+    RMdir /r "$INSTDIR\jre"
+    RMDir /r "$INSTDIR\logs"
+
+    IfErrors fail success
+    fail:
+        DetailPrint "Failed to remove SlimeVR Server files. Make sure SlimeVR Server is closed."
+        Abort
+    success:
+SectionEnd
+
+Section "-un.SlimeVR Driver" un.SEC_VRDRIVER
+    ${DisableX64FSRedirection}
+    nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Bypass -File "$INSTDIR\steamvr.ps1" -SteamPath "$STEAMDIR" -DriverPath "slimevr" -Uninstall' $0
+    ${EnableX64FSRedirection}
+    Pop $0
+    ${If} $0 != 0
+        Abort "Failed to remove SlimeVR Driver."
+    ${EndIf}
+    Delete "$INSTDIR\steamvr.ps1"
+SectionEnd
+
+Section "-un.SlimeVR Feeder App" un.SEC_FEEDER_APP
+    IfFileExists "$INSTDIR\Feeder-App\SlimeVR-Feeder-App.exe" found not_found
+    found:
+        DetailPrint "Unregistering SlimeVR Feeder App driver..."
+        nsExec::ExecToLog '"$INSTDIR\Feeder-App\SlimeVR-Feeder-App.exe" --uninstall'
+        DetailPrint "Removing SlimeVR Feeder App..."
+        RMdir /r "$INSTDIR\Feeder-App"
+    not_found:
+SectionEnd
+
+Section "-un." un.SEC_FIREWALL
     DetailPrint "Removing SlimeVR Server from firewall exceptions...."
     nsExec::Exec '"$INSTDIR\firewall_uninstall.bat"'
+    Pop $0
+    Delete "$INSTDIR\firewall*.bat"
+SectionEnd
 
+Section "-un." un.SEC_POST_UNINSTALL
     DetailPrint "Unregistering installation..."
     DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR"
-
-    Call un.cleanInstDir
-
+    Delete "$INSTDIR\uninstall.exe"
+    RMDir $INSTDIR
     DetailPrint "Done."
 SectionEnd
-# Uninstaller section end
 
 LangString DESC_SEC_SERVER ${LANG_ENGLISH} "Installs latest SlimeVR Server. Additionally downloads Java JRE 11."
 LangString DESC_SEC_VRDRIVER ${LANG_ENGLISH} "Installs latest SlimeVR Driver in SteamVR."
 LangString DESC_SEC_USBDRIVERS ${LANG_ENGLISH} "A list of USB drivers that are used by various boards."
+LangString DESC_SEC_FEEDER_APP ${LANG_ENGLISH} "Installs SlimeVR Feeder App that sends position of SteamVR trackers (Vive trackers, controllers) to SlimeVR Server. Required for elbow tracking."
 LangString DESC_SEC_CP210X ${LANG_ENGLISH} "Installs CP210X USB driver that comes with the following boards: NodeMCU v2, Wemos D1 Mini."
 LangString DESC_SEC_CH340 ${LANG_ENGLISH} "Installs CH340 USB driver that comes with the following boards: NodeMCU v3, SlimeVR, Wemos D1 Mini."
 LangString DESC_SEC_CH9102x ${LANG_ENGLISH} "Installs CH9102x USB driver that comes with the following boards: NodeMCU v2.1."
