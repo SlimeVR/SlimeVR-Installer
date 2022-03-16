@@ -85,11 +85,13 @@ Function cleanTemp
     Delete "$TEMP\SlimeVR.zip"
     Delete "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.14_9.zip"
     Delete "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.14_9.zip"
+    Delete "$TEMP\SlimeVR-Feeder-App-win64.zip"
     RMDir /r "$TEMP\slimevr-openvr-driver-win64"
     RMDir /r "$TEMP\SlimeVR"
     RMDir /r "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.14_9"
     RMDir /r "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.14_9"
     RMDir /r "$TEMP\slimevr_usb_drivers_inst"
+    RMDir /r "$TEMP\SlimeVR-Feeder-App-win64"
 FunctionEnd
 
 Function .onInstFailed
