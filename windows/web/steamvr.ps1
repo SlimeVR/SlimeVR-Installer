@@ -5,6 +5,8 @@ param (
     [parameter(Position=2)][switch]$Uninstall = $false
 )
 
+$ErrorActionPreference = 'Stop'
+
 # Required for System.Web.Script.Serialization.JavaScriptSerializer
 [void][System.Reflection.Assembly]::LoadWithPartialName("System.Web.Extensions")
 
@@ -75,13 +77,23 @@ foreach ($SteamVrPath in $SteamVrPaths) {
     if (Test-Path -Path "$SteamVrPath\bin") {
         $SteamVrDriverPath = "$SteamVrPath\drivers\$DriverFolder"
         if (Test-Path -Path $SteamVrDriverPath) {
-            Remove-Item -Recurse -Path $SteamVrDriverPath
+            try {
+                Remove-Item -Recurse -Path $SteamVrDriverPath
+            } catch [System.Management.Automation.ActionPreferenceStopException] {
+                Write-Host "Failed to remove SlimeVR driver. Make sure SteamVR is closed."
+                exit 1
+            }
         }
         if ($Uninstall -eq $true) {
             Write-Host "Deleted SlimeVR Driver from `"$SteamVrDriverPath`""
             exit 0
         }
-        Copy-Item -Recurse -Force -Path $DriverPath -Destination "$SteamVrPath\drivers"
+        try {
+            Copy-Item -Recurse -Force -Path $DriverPath -Destination "$SteamVrPath\drivers"
+        } catch [System.Management.Automation.ActionPreferenceStopException] {
+            Write-Host "Failed to remove old SlimeVR driver. Make sure SteamVR is closed and there's enough free disk space."
+            exit 1
+        }
         Write-Host "Installed SlimeVR Driver to `"$SteamVrDriverPath`""
         exit 0
     }
