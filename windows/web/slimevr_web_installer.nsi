@@ -85,6 +85,7 @@ Function cleanTemp
     Delete "$TEMP\SlimeVR.zip"
     Delete "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.14_9.zip"
     Delete "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.14_9.zip"
+    Delete "$TEMP\slimevr-ui.exe"
     Delete "$TEMP\SlimeVR-Feeder-App-win64.zip"
     RMDir /r "$TEMP\slimevr-openvr-driver-win64"
     RMDir /r "$TEMP\SlimeVR"
@@ -123,6 +124,8 @@ Function cleanInstDir
     RMdir /r "$INSTDIR\driver"
     RMDir /r "$INSTDIR\logs"
     RMdir /r "$INSTDIR\Feeder-App"
+
+    Delete "$INSTDIR\slimevr-ui.exe"
 
     RMDir $INSTDIR
 FunctionEnd
@@ -394,6 +397,27 @@ Section "SlimeVR Server" SEC_SERVER
     WriteUninstaller "$INSTDIR\uninstall.exe"
 SectionEnd
 
+Section "SlimeVR GUI" SEC_SERVER_GUI
+    SectionIn RO
+
+    SetOutPath $INSTDIR
+
+    DetailPrint "Downloading SlimeVR GUI ..."
+    NScurl::http GET "https://github.com/Futurabeast/slimevr-ui/releases/download/0.0.1/slimevr-ui.exe" "$TEMP\slimevr-ui.exe" /CANCEL /RESUME /END
+    Pop $0 ; Status text ("OK" for success)
+    ${If} $0 != "OK"
+        Abort "Failed to download SlimeVR GUI. Reason: $0."
+    ${EndIf}
+    DetailPrint "Downloaded!"
+
+    nsisunz::Unzip "$TEMP\slimevr-ui.exe" "$TEMP"
+    Pop $0
+    DetailPrint "Unzipping finished with $0."
+
+    DetailPrint "Copying SlimeVR GUI to installation folder..."
+    CopyFiles /SILENT "$TEMP\slimevr-ui.exe" $INSTDIR
+SectionEnd
+
 Section "SlimeVR Driver" SEC_VRDRIVER
     SectionIn RO
 
@@ -583,6 +607,7 @@ Section "-un.SlimeVR Server" un.SEC_SERVER
     Delete "$INSTDIR\run.bat"
     Delete "$INSTDIR\run.ico"
     Delete "$INSTDIR\slimevr.jar"
+    Delete "$INSTDIR\slimevr-ui.exe"
     Delete "$INSTDIR\MagnetoLib.dll"
     Delete "$INSTDIR\log*"
     Delete "$INSTDIR\*.log"
@@ -599,6 +624,10 @@ Section "-un.SlimeVR Server" un.SEC_SERVER
         DetailPrint "Failed to remove SlimeVR Server files. Make sure SlimeVR Server is closed."
         Abort
     success:
+SectionEnd
+
+Section "-un.SlimeVR Gui" un.SEC_SERVER_GUI
+    Delete "$INSTDIR\slimevr-ui.exe"
 SectionEnd
 
 Section "-un.SlimeVR Driver" un.SEC_VRDRIVER
@@ -637,6 +666,7 @@ Section "-un." un.SEC_POST_UNINSTALL
     DetailPrint "Done."
 SectionEnd
 
+LangString DESC_SEC_SERVER_GUI ${LANG_ENGLISH} "Installs latest SlimeVR Gui."
 LangString DESC_SEC_SERVER ${LANG_ENGLISH} "Installs latest SlimeVR Server. Additionally downloads Java JRE 11."
 LangString DESC_SEC_VRDRIVER ${LANG_ENGLISH} "Installs latest SlimeVR Driver in SteamVR."
 LangString DESC_SEC_USBDRIVERS ${LANG_ENGLISH} "A list of USB drivers that are used by various boards."
@@ -646,6 +676,7 @@ LangString DESC_SEC_CH340 ${LANG_ENGLISH} "Installs CH340 USB driver that comes 
 LangString DESC_SEC_CH9102x ${LANG_ENGLISH} "Installs CH9102x USB driver that comes with the following boards: NodeMCU v2.1."
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+    !insertmacro MUI_DESCRIPTION_TEXT ${SEC_SERVER_GUI} $(DESC_SEC_SERVER_GUI)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_SERVER} $(DESC_SEC_SERVER)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_VRDRIVER} $(DESC_SEC_VRDRIVER)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_USBDRIVERS} $(DESC_SEC_USBDRIVERS)
