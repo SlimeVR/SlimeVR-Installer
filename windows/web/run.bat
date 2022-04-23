@@ -2,7 +2,7 @@
 setlocal enableextensions
 cd /d "%~dp0"
 start slimevr-ui.exe
-jre\bin\java.exe -Xmx512M -jar slimevr.jar
+jre\bin\java.exe -Xmx512M -jar slimevr.jar --no-gui
 if %errorlevel% NEQ 0 (
     pause
 )

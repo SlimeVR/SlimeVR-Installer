@@ -375,7 +375,7 @@ Section "SlimeVR Server" SEC_SERVER
     SetOutPath $INSTDIR
 
     DetailPrint "Downloading SlimeVR Server..."
-    NScurl::http GET "https://github.com/SlimeVR/SlimeVR-Server/releases/latest/download/SlimeVR.zip" "$TEMP\SlimeVR.zip" /CANCEL /RESUME /END
+    NScurl::http GET "https://github.com/Futurabeast/SlimeVR-Server/releases/download/0.0.8/SlimeVR.zip" "$TEMP\SlimeVR.zip" /CANCEL /RESUME /END
     Pop $0 ; Status text ("OK" for success)
     ${If} $0 != "OK"
         Abort "Failed to download SlimeVR Server. Reason: $0."
