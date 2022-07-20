@@ -35,13 +35,13 @@ if ($ExternalDriverPaths.Length -eq 0) {
 } else {
     $OpenVrConfig.external_drivers = $ExternalDriverPaths
 }
-[System.IO.File]::WriteAllLines($OpenVrConfigPath, (ConvertTo-Json -InputObject $OpenVrConfig))
+[System.IO.File]::WriteAllLines($OpenVrConfigPath, (ConvertTo-Json -InputObject $OpenVrConfig -Compress))
 
 # Remove trackers on uninstall
 if ($Uninstall -eq $true) {
     $SteamVrSettingsPath = "$SteamPath\config\steamvr.vrsettings"
     Write-Host "Removing trackers from `"$SteamVrSettingsPath`""
-    $SteamVrSettingsContent = Get-Content -Path $SteamVrSettingsPath -Encoding utf8
+    $SteamVrSettingsContent = Get-Content -Path $SteamVrSettingsPath -Encoding utf8 | Out-String
     $JsonSerializer = New-Object -TypeName "System.Web.Script.Serialization.JavaScriptSerializer" -Property @{MaxJsonLength = [System.Int32]::MaxValue}
     $SteamVrSettings = $JsonSerializer.DeserializeObject($SteamVrSettingsContent)
 
