@@ -12,7 +12,7 @@ $ErrorActionPreference = 'Stop'
 
 # Prune external SlimeVR driver(s)
 $OpenVrConfigPath = "$env:LOCALAPPDATA\openvr\openvrpaths.vrpath"
-$OpenVrConfig = Get-Content -Path $OpenVrConfigPath -Encoding utf8 | ConvertFrom-Json
+$OpenVrConfig = Get-Content -Path $OpenVrConfigPath -Encoding utf8 -Raw | ConvertFrom-Json
 Write-Host "Checking `"$OpenVrConfigPath`" for SlimeVR Drivers..."
 $ExternalDriverPaths = @()
 if ($OpenVrConfig.external_drivers -and $OpenVrConfig.external_drivers.Length) {
@@ -22,7 +22,7 @@ if ($OpenVrConfig.external_drivers -and $OpenVrConfig.external_drivers.Length) {
             $ExternalDriverPaths += $ExternalDriverPath
             continue
         }
-        $DriverManifest = Get-Content -Path "$ExternalDriverPath\driver.vrdrivermanifest" -Encoding utf8 | ConvertFrom-Json
+        $DriverManifest = Get-Content -Path "$ExternalDriverPath\driver.vrdrivermanifest" -Encoding utf8 -Raw | ConvertFrom-Json
         if ($DriverManifest.name -eq "SlimeVR") {
             Write-Host "Found external SlimeVR Driver in `"$ExternalDriverPath`". Removing..."
             continue
