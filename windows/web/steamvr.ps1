@@ -12,7 +12,7 @@ $ErrorActionPreference = 'Stop'
 
 # Prune external SlimeVR driver(s)
 $OpenVrConfigPath = "$env:LOCALAPPDATA\openvr\openvrpaths.vrpath"
-$OpenVrConfig = Get-Content -Path $OpenVrConfigPath -Encoding utf8 | ConvertFrom-Json
+$OpenVrConfig = Get-Content -Path $OpenVrConfigPath -Encoding utf8 | Out-String | ConvertFrom-Json
 Write-Host "Checking `"$OpenVrConfigPath`" for SlimeVR Drivers..."
 $ExternalDriverPaths = @()
 if ($OpenVrConfig.external_drivers -and $OpenVrConfig.external_drivers.Length) {
@@ -22,7 +22,7 @@ if ($OpenVrConfig.external_drivers -and $OpenVrConfig.external_drivers.Length) {
             $ExternalDriverPaths += $ExternalDriverPath
             continue
         }
-        $DriverManifest = Get-Content -Path "$ExternalDriverPath\driver.vrdrivermanifest" -Encoding utf8 | ConvertFrom-Json
+        $DriverManifest = Get-Content -Path "$ExternalDriverPath\driver.vrdrivermanifest" -Encoding utf8 | Out-String | ConvertFrom-Json
         if ($DriverManifest.name -eq "SlimeVR") {
             Write-Host "Found external SlimeVR Driver in `"$ExternalDriverPath`". Removing..."
             continue
@@ -35,13 +35,13 @@ if ($ExternalDriverPaths.Length -eq 0) {
 } else {
     $OpenVrConfig.external_drivers = $ExternalDriverPaths
 }
-[System.IO.File]::WriteAllLines($OpenVrConfigPath, (ConvertTo-Json -InputObject $OpenVrConfig))
+[System.IO.File]::WriteAllLines($OpenVrConfigPath, (ConvertTo-Json -InputObject $OpenVrConfig -Compress))
 
 # Remove trackers on uninstall
 if ($Uninstall -eq $true) {
     $SteamVrSettingsPath = "$SteamPath\config\steamvr.vrsettings"
     Write-Host "Removing trackers from `"$SteamVrSettingsPath`""
-    $SteamVrSettingsContent = Get-Content -Path $SteamVrSettingsPath -Encoding utf8
+    $SteamVrSettingsContent = Get-Content -Path $SteamVrSettingsPath -Encoding utf8 | Out-String
     $JsonSerializer = New-Object -TypeName "System.Web.Script.Serialization.JavaScriptSerializer" -Property @{MaxJsonLength = [System.Int32]::MaxValue}
     $SteamVrSettings = $JsonSerializer.DeserializeObject($SteamVrSettingsContent)
 
