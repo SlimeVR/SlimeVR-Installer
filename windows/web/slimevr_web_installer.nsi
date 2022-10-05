@@ -463,8 +463,8 @@ SectionGroup "USB drivers" SEC_USBDRIVERS
         File /r "CP201x\*"
         ${DisableX64FSRedirection}
         nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "$TEMP\slimevr_usb_drivers_inst\CP201x\silabser.inf"' $0
-        Pop $0
         ${EnableX64FSRedirection}
+        Pop $0
         ${If} $0 == 0
             DetailPrint "Success!"
         ${ElseIf} $0 == 259
@@ -483,8 +483,8 @@ SectionGroup "USB drivers" SEC_USBDRIVERS
         File /r "CH341SER\*"
         ${DisableX64FSRedirection}
         nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "$TEMP\slimevr_usb_drivers_inst\CH341SER\CH341SER.INF"' $0
-        Pop $0
         ${EnableX64FSRedirection}
+        Pop $0
         ${If} $0 == 0
             DetailPrint "Success!"
         ${ElseIf} $0 == 259
@@ -503,8 +503,8 @@ SectionGroup "USB drivers" SEC_USBDRIVERS
         File /r "CH343SER\*"
         ${DisableX64FSRedirection}
         nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "$TEMP\slimevr_usb_drivers_inst\CH343SER\CH343SER.INF"' $0
-        Pop $0
         ${EnableX64FSRedirection}
+        Pop $0
         ${If} $0 == 0
             DetailPrint "Success!"
         ${ElseIf} $0 == 259
@@ -598,8 +598,7 @@ Section "-un.SlimeVR Server" un.SEC_SERVER
 
     IfErrors fail success
     fail:
-        DetailPrint "Failed to remove SlimeVR Server files. Make sure SlimeVR Server is closed."
-        Abort
+        Abort "Failed to remove SlimeVR Server files. Make sure SlimeVR Server is closed."
     success:
 SectionEnd
 
