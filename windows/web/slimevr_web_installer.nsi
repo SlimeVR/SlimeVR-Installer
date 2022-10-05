@@ -108,7 +108,7 @@ Function cleanInstDir
     Delete "$INSTDIR\uninstall.exe"
     Delete "$INSTDIR\run.bat"
     Delete "$INSTDIR\run.ico"
-    Delete "$INSTDIR\slimevr.jar"
+    Delete "$INSTDIR\slimevr*"
     Delete "$INSTDIR\firewall*.bat"
     Delete "$INSTDIR\MagnetoLib.dll"
     Delete "$INSTDIR\steamvr.ps1"
