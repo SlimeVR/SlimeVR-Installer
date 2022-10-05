@@ -343,31 +343,6 @@ Function DumpLog
     Exch $5
 FunctionEnd
 
-Section "-" SEC_JRE
-    SectionIn RO
-    
-    Var /GLOBAL DownloadedJreFile
-    DetailPrint "Downloading Java JRE 17..."
-    ${If} ${RunningX64}
-        NScurl::http GET "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.4.1%2B1/OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip" "$TEMP\OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip" /CANCEL /RESUME /END
-        StrCpy $DownloadedJreFile "OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1"
-    ${Else}
-        NScurl::http GET "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.4.1%2B1/OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1.zip" "$TEMP\OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1.zip" /CANCEL /RESUME /END
-        StrCpy $DownloadedJreFile "OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1"
-    ${EndIf}
-    Pop $0 ; Status text ("OK" for success)
-    ${If} $0 != "OK"
-        Abort "Failed to download Java JRE 17. Reason: $0."
-    ${EndIf}
-    DetailPrint "Downloaded!"
-
-    DetailPrint "Unzipping Java JRE 17 to installation folder...."
-    nsisunz::Unzip "$TEMP\$DownloadedJreFile.zip" "$TEMP\$DownloadedJreFile\"
-    Pop $0
-    DetailPrint "Unzipping finished with $0."
-    CopyFiles /SILENT "$TEMP\$DownloadedJreFile\jdk-17.0.4.1+1-jre\*" "$INSTDIR\jre"
-SectionEnd
-
 Section "SlimeVR Server" SEC_SERVER
     SectionIn RO
 
@@ -394,6 +369,31 @@ Section "SlimeVR Server" SEC_SERVER
 
     # Create the uninstaller
     WriteUninstaller "$INSTDIR\uninstall.exe"
+SectionEnd
+
+Section "Java JRE" SEC_JRE
+    SectionIn RO
+    
+    Var /GLOBAL DownloadedJreFile
+    DetailPrint "Downloading Java JRE 17..."
+    ${If} ${RunningX64}
+        NScurl::http GET "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.4.1%2B1/OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip" "$TEMP\OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip" /CANCEL /RESUME /END
+        StrCpy $DownloadedJreFile "OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1"
+    ${Else}
+        NScurl::http GET "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.4.1%2B1/OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1.zip" "$TEMP\OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1.zip" /CANCEL /RESUME /END
+        StrCpy $DownloadedJreFile "OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1"
+    ${EndIf}
+    Pop $0 ; Status text ("OK" for success)
+    ${If} $0 != "OK"
+        Abort "Failed to download Java JRE 17. Reason: $0."
+    ${EndIf}
+    DetailPrint "Downloaded!"
+
+    DetailPrint "Unzipping Java JRE 17 to installation folder...."
+    nsisunz::Unzip "$TEMP\$DownloadedJreFile.zip" "$TEMP\$DownloadedJreFile\"
+    Pop $0
+    DetailPrint "Unzipping finished with $0."
+    CopyFiles /SILENT "$TEMP\$DownloadedJreFile\jdk-17.0.4.1+1-jre\*" "$INSTDIR\jre"
 SectionEnd
 
 Section "SlimeVR Driver" SEC_VRDRIVER
@@ -566,8 +566,8 @@ SectionEnd
 Function componentsPre
     ${If} $SELECTED_INSTALLER_ACTION == "update"
         SectionSetFlags ${SEC_FIREWALL} 0
-        SectionSetFlags ${SEC_JRE} 0
         SectionSetFlags ${SEC_REGISTERAPP} 0
+        SectionSetFlags ${SEC_JRE} ${SF_SELECTED}
         SectionSetFlags ${SEC_USBDRIVERS} ${SF_SECGRP}
         SectionSetFlags ${SEC_VRDRIVER} ${SF_SELECTED}
         SectionSetFlags ${SEC_SERVER} ${SF_SELECTED}
@@ -639,7 +639,8 @@ Section "-un." un.SEC_POST_UNINSTALL
     DetailPrint "Done."
 SectionEnd
 
-LangString DESC_SEC_SERVER ${LANG_ENGLISH} "Installs latest SlimeVR Server. Additionally downloads Java JRE 11."
+LangString DESC_SEC_SERVER ${LANG_ENGLISH} "Installs latest SlimeVR Server."
+LangString DESC_SEC_JRE ${LANG_ENGLISH} "Downloads and copies Java JRE 17 to installation folder. Required for SlimeVR Server."
 LangString DESC_SEC_VRDRIVER ${LANG_ENGLISH} "Installs latest SlimeVR Driver in SteamVR."
 LangString DESC_SEC_USBDRIVERS ${LANG_ENGLISH} "A list of USB drivers that are used by various boards."
 LangString DESC_SEC_FEEDER_APP ${LANG_ENGLISH} "Installs SlimeVR Feeder App that sends position of SteamVR trackers (Vive trackers, controllers) to SlimeVR Server. Required for elbow tracking."
@@ -649,6 +650,7 @@ LangString DESC_SEC_CH9102x ${LANG_ENGLISH} "Installs CH9102x USB driver that co
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_SERVER} $(DESC_SEC_SERVER)
+    !insertmacro MUI_DESCRIPTION_TEXT ${SEC_JRE} $(DESC_SEC_JRE)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_VRDRIVER} $(DESC_SEC_VRDRIVER)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_USBDRIVERS} $(DESC_SEC_USBDRIVERS)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_CP210X} $(DESC_SEC_CP210X)
