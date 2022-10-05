@@ -397,8 +397,6 @@ Section "Java JRE" SEC_JRE
 SectionEnd
 
 Section "SlimeVR Driver" SEC_VRDRIVER
-    SectionIn RO
-
     SetOutPath $INSTDIR
 
     DetailPrint "Downloading SlimeVR Driver..."
