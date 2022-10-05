@@ -609,7 +609,7 @@ Section "-un.SlimeVR Driver" un.SEC_VRDRIVER
     ${EnableX64FSRedirection}
     Pop $0
     ${If} $0 != 0
-        Abort "Failed to remove SlimeVR Driver."
+        DetailPrint "Failed to remove SlimeVR Driver."
     ${EndIf}
     Delete "$INSTDIR\steamvr.ps1"
 SectionEnd
