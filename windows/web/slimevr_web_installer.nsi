@@ -83,13 +83,13 @@ FunctionEnd
 Function cleanTemp
     Delete "$TEMP\slimevr-openvr-driver-win64.zip"
     Delete "$TEMP\SlimeVR.zip"
-    Delete "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.14_9.zip"
-    Delete "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.14_9.zip"
+    Delete "$TEMP\OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip"
+    Delete "$TEMP\OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1.zip"
     Delete "$TEMP\SlimeVR-Feeder-App-win64.zip"
     RMDir /r "$TEMP\slimevr-openvr-driver-win64"
     RMDir /r "$TEMP\SlimeVR"
-    RMDir /r "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.14_9"
-    RMDir /r "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.14_9"
+    RMDir /r "$TEMP\OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1"
+    RMDir /r "$TEMP\OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1"
     RMDir /r "$TEMP\slimevr_usb_drivers_inst"
     RMDir /r "$TEMP\SlimeVR-Feeder-App-win64"
 FunctionEnd
@@ -344,26 +344,28 @@ Function DumpLog
 FunctionEnd
 
 Section "-" SEC_JRE
+    SectionIn RO
+    
     Var /GLOBAL DownloadedJreFile
-    DetailPrint "Downloading Java JRE..."
+    DetailPrint "Downloading Java JRE 17..."
     ${If} ${RunningX64}
-        NScurl::http GET "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.14%2B9/OpenJDK11U-jre_x64_windows_hotspot_11.0.14_9.zip" "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.14_9.zip" /CANCEL /RESUME /END
-        StrCpy $DownloadedJreFile "OpenJDK11U-jre_x64_windows_hotspot_11.0.14_9"
+        NScurl::http GET "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.4.1%2B1/OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip" "$TEMP\OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip" /CANCEL /RESUME /END
+        StrCpy $DownloadedJreFile "OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1"
     ${Else}
-        NScurl::http GET "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.14%2B9/OpenJDK11U-jre_x86-32_windows_hotspot_11.0.14_9.zip" "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.14_9.zip" /CANCEL /RESUME /END
-        StrCpy $DownloadedJreFile "OpenJDK11U-jre_x86-32_windows_hotspot_11.0.14_9"
+        NScurl::http GET "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.4.1%2B1/OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1.zip" "$TEMP\OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1.zip" /CANCEL /RESUME /END
+        StrCpy $DownloadedJreFile "OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1"
     ${EndIf}
     Pop $0 ; Status text ("OK" for success)
     ${If} $0 != "OK"
-        Abort "Failed to download Java JRE. Reason: $0."
+        Abort "Failed to download Java JRE 17. Reason: $0."
     ${EndIf}
     DetailPrint "Downloaded!"
 
-    DetailPrint "Unzipping Java JRE to installation folder...."
+    DetailPrint "Unzipping Java JRE 17 to installation folder...."
     nsisunz::Unzip "$TEMP\$DownloadedJreFile.zip" "$TEMP\$DownloadedJreFile\"
     Pop $0
     DetailPrint "Unzipping finished with $0."
-    CopyFiles /SILENT "$TEMP\$DownloadedJreFile\jdk-11.0.14+9-jre\*" "$INSTDIR\jre"
+    CopyFiles /SILENT "$TEMP\$DownloadedJreFile\jdk-17.0.4.1+1-jre\*" "$INSTDIR\jre"
 SectionEnd
 
 Section "SlimeVR Server" SEC_SERVER
