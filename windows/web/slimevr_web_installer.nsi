@@ -27,7 +27,7 @@ InstallDir "$PROGRAMFILES\SlimeVR Server" ; $InstDir default value. Defaults to 
 ShowInstDetails show
 ShowUninstDetails show
 
-BrandingText "SlimeVR Installer 0.1.5"
+BrandingText "SlimeVR Installer 0.1.6"
 
 # Admin rights are required for:
 # 1. Removing Start Menu shortcut in Windows 7+
@@ -83,13 +83,13 @@ FunctionEnd
 Function cleanTemp
     Delete "$TEMP\slimevr-openvr-driver-win64.zip"
     Delete "$TEMP\SlimeVR.zip"
-    Delete "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.14_9.zip"
-    Delete "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.14_9.zip"
+    Delete "$TEMP\OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip"
+    Delete "$TEMP\OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1.zip"
     Delete "$TEMP\SlimeVR-Feeder-App-win64.zip"
     RMDir /r "$TEMP\slimevr-openvr-driver-win64"
     RMDir /r "$TEMP\SlimeVR"
-    RMDir /r "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.14_9"
-    RMDir /r "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.14_9"
+    RMDir /r "$TEMP\OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1"
+    RMDir /r "$TEMP\OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1"
     RMDir /r "$TEMP\slimevr_usb_drivers_inst"
     RMDir /r "$TEMP\SlimeVR-Feeder-App-win64"
 FunctionEnd
@@ -108,7 +108,7 @@ Function cleanInstDir
     Delete "$INSTDIR\uninstall.exe"
     Delete "$INSTDIR\run.bat"
     Delete "$INSTDIR\run.ico"
-    Delete "$INSTDIR\slimevr.jar"
+    Delete "$INSTDIR\slimevr*"
     Delete "$INSTDIR\firewall*.bat"
     Delete "$INSTDIR\MagnetoLib.dll"
     Delete "$INSTDIR\steamvr.ps1"
@@ -343,29 +343,6 @@ Function DumpLog
     Exch $5
 FunctionEnd
 
-Section "-" SEC_JRE
-    Var /GLOBAL DownloadedJreFile
-    DetailPrint "Downloading Java JRE..."
-    ${If} ${RunningX64}
-        NScurl::http GET "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.14%2B9/OpenJDK11U-jre_x64_windows_hotspot_11.0.14_9.zip" "$TEMP\OpenJDK11U-jre_x64_windows_hotspot_11.0.14_9.zip" /CANCEL /RESUME /END
-        StrCpy $DownloadedJreFile "OpenJDK11U-jre_x64_windows_hotspot_11.0.14_9"
-    ${Else}
-        NScurl::http GET "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.14%2B9/OpenJDK11U-jre_x86-32_windows_hotspot_11.0.14_9.zip" "$TEMP\OpenJDK11U-jre_x86-32_windows_hotspot_11.0.14_9.zip" /CANCEL /RESUME /END
-        StrCpy $DownloadedJreFile "OpenJDK11U-jre_x86-32_windows_hotspot_11.0.14_9"
-    ${EndIf}
-    Pop $0 ; Status text ("OK" for success)
-    ${If} $0 != "OK"
-        Abort "Failed to download Java JRE. Reason: $0."
-    ${EndIf}
-    DetailPrint "Downloaded!"
-
-    DetailPrint "Unzipping Java JRE to installation folder...."
-    nsisunz::Unzip "$TEMP\$DownloadedJreFile.zip" "$TEMP\$DownloadedJreFile\"
-    Pop $0
-    DetailPrint "Unzipping finished with $0."
-    CopyFiles /SILENT "$TEMP\$DownloadedJreFile\jdk-11.0.14+9-jre\*" "$INSTDIR\jre"
-SectionEnd
-
 Section "SlimeVR Server" SEC_SERVER
     SectionIn RO
 
@@ -394,9 +371,32 @@ Section "SlimeVR Server" SEC_SERVER
     WriteUninstaller "$INSTDIR\uninstall.exe"
 SectionEnd
 
-Section "SlimeVR Driver" SEC_VRDRIVER
+Section "Java JRE" SEC_JRE
     SectionIn RO
+    
+    Var /GLOBAL DownloadedJreFile
+    DetailPrint "Downloading Java JRE 17..."
+    ${If} ${RunningX64}
+        NScurl::http GET "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.4.1%2B1/OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip" "$TEMP\OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip" /CANCEL /RESUME /END
+        StrCpy $DownloadedJreFile "OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1"
+    ${Else}
+        NScurl::http GET "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.4.1%2B1/OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1.zip" "$TEMP\OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1.zip" /CANCEL /RESUME /END
+        StrCpy $DownloadedJreFile "OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1"
+    ${EndIf}
+    Pop $0 ; Status text ("OK" for success)
+    ${If} $0 != "OK"
+        Abort "Failed to download Java JRE 17. Reason: $0."
+    ${EndIf}
+    DetailPrint "Downloaded!"
 
+    DetailPrint "Unzipping Java JRE 17 to installation folder...."
+    nsisunz::Unzip "$TEMP\$DownloadedJreFile.zip" "$TEMP\$DownloadedJreFile\"
+    Pop $0
+    DetailPrint "Unzipping finished with $0."
+    CopyFiles /SILENT "$TEMP\$DownloadedJreFile\jdk-17.0.4.1+1-jre\*" "$INSTDIR\jre"
+SectionEnd
+
+Section "SlimeVR Driver" SEC_VRDRIVER
     SetOutPath $INSTDIR
 
     DetailPrint "Downloading SlimeVR Driver..."
@@ -461,8 +461,8 @@ SectionGroup "USB drivers" SEC_USBDRIVERS
         File /r "CP201x\*"
         ${DisableX64FSRedirection}
         nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "$TEMP\slimevr_usb_drivers_inst\CP201x\silabser.inf"' $0
-        Pop $0
         ${EnableX64FSRedirection}
+        Pop $0
         ${If} $0 == 0
             DetailPrint "Success!"
         ${ElseIf} $0 == 259
@@ -481,8 +481,8 @@ SectionGroup "USB drivers" SEC_USBDRIVERS
         File /r "CH341SER\*"
         ${DisableX64FSRedirection}
         nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "$TEMP\slimevr_usb_drivers_inst\CH341SER\CH341SER.INF"' $0
-        Pop $0
         ${EnableX64FSRedirection}
+        Pop $0
         ${If} $0 == 0
             DetailPrint "Success!"
         ${ElseIf} $0 == 259
@@ -501,8 +501,8 @@ SectionGroup "USB drivers" SEC_USBDRIVERS
         File /r "CH343SER\*"
         ${DisableX64FSRedirection}
         nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "$TEMP\slimevr_usb_drivers_inst\CH343SER\CH343SER.INF"' $0
-        Pop $0
         ${EnableX64FSRedirection}
+        Pop $0
         ${If} $0 == 0
             DetailPrint "Success!"
         ${ElseIf} $0 == 259
@@ -564,8 +564,8 @@ SectionEnd
 Function componentsPre
     ${If} $SELECTED_INSTALLER_ACTION == "update"
         SectionSetFlags ${SEC_FIREWALL} 0
-        SectionSetFlags ${SEC_JRE} 0
         SectionSetFlags ${SEC_REGISTERAPP} 0
+        SectionSetFlags ${SEC_JRE} ${SF_SELECTED}
         SectionSetFlags ${SEC_USBDRIVERS} ${SF_SECGRP}
         SectionSetFlags ${SEC_VRDRIVER} ${SF_SELECTED}
         SectionSetFlags ${SEC_SERVER} ${SF_SELECTED}
@@ -596,8 +596,7 @@ Section "-un.SlimeVR Server" un.SEC_SERVER
 
     IfErrors fail success
     fail:
-        DetailPrint "Failed to remove SlimeVR Server files. Make sure SlimeVR Server is closed."
-        Abort
+        Abort "Failed to remove SlimeVR Server files. Make sure SlimeVR Server is closed."
     success:
 SectionEnd
 
@@ -607,7 +606,7 @@ Section "-un.SlimeVR Driver" un.SEC_VRDRIVER
     ${EnableX64FSRedirection}
     Pop $0
     ${If} $0 != 0
-        Abort "Failed to remove SlimeVR Driver."
+        DetailPrint "Failed to remove SlimeVR Driver."
     ${EndIf}
     Delete "$INSTDIR\steamvr.ps1"
 SectionEnd
@@ -637,7 +636,8 @@ Section "-un." un.SEC_POST_UNINSTALL
     DetailPrint "Done."
 SectionEnd
 
-LangString DESC_SEC_SERVER ${LANG_ENGLISH} "Installs latest SlimeVR Server. Additionally downloads Java JRE 11."
+LangString DESC_SEC_SERVER ${LANG_ENGLISH} "Installs latest SlimeVR Server."
+LangString DESC_SEC_JRE ${LANG_ENGLISH} "Downloads and copies Java JRE 17 to installation folder. Required for SlimeVR Server."
 LangString DESC_SEC_VRDRIVER ${LANG_ENGLISH} "Installs latest SlimeVR Driver in SteamVR."
 LangString DESC_SEC_USBDRIVERS ${LANG_ENGLISH} "A list of USB drivers that are used by various boards."
 LangString DESC_SEC_FEEDER_APP ${LANG_ENGLISH} "Installs SlimeVR Feeder App that sends position of SteamVR trackers (Vive trackers, controllers) to SlimeVR Server. Required for elbow tracking."
@@ -647,6 +647,7 @@ LangString DESC_SEC_CH9102x ${LANG_ENGLISH} "Installs CH9102x USB driver that co
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_SERVER} $(DESC_SEC_SERVER)
+    !insertmacro MUI_DESCRIPTION_TEXT ${SEC_JRE} $(DESC_SEC_JRE)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_VRDRIVER} $(DESC_SEC_VRDRIVER)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_USBDRIVERS} $(DESC_SEC_USBDRIVERS)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_CP210X} $(DESC_SEC_CP210X)
