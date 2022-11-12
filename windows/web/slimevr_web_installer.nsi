@@ -27,7 +27,7 @@ InstallDir "$PROGRAMFILES\SlimeVR Server" ; $InstDir default value. Defaults to 
 ShowInstDetails show
 ShowUninstDetails show
 
-BrandingText "SlimeVR Installer 0.1.7"
+BrandingText "SlimeVR Installer 0.1.8"
 
 # Admin rights are required for:
 # 1. Removing Start Menu shortcut in Windows 7+
@@ -215,18 +215,17 @@ Function endPage
     Pop $OPEN_DOCUMENTATION
     ${NSD_Check} $OPEN_DOCUMENTATION
 
-    ${If} $SELECTED_INSTALLER_ACTION != "update"
-        ${NSD_CreateCheckbox} 0 40u 100% 10u "Create Desktop shortcut"
-        Pop $CREATE_DESKTOP_SHORTCUT
-        ${NSD_Check} $CREATE_DESKTOP_SHORTCUT
-        ${NSD_CreateCheckbox} 0 55u 100% 10u "Create Start Menu shortcuts"
-        Pop $CREATE_STARTMENU_SHORTCUTS
-        ${NSD_Check} $CREATE_STARTMENU_SHORTCUTS
-    ${Endif}
+    ${NSD_CreateCheckbox} 0 40u 100% 10u "Create Desktop shortcut"
+    Pop $CREATE_DESKTOP_SHORTCUT
+    ${NSD_Check} $CREATE_DESKTOP_SHORTCUT
+    ${NSD_CreateCheckbox} 0 55u 100% 10u "Create Start Menu shortcuts"
+    Pop $CREATE_STARTMENU_SHORTCUTS
+    ${NSD_Check} $CREATE_STARTMENU_SHORTCUTS
 
     nsDialogs::Show
 
 FunctionEnd
+
 
 Function endPageLeave
 
@@ -240,10 +239,18 @@ Function endPageLeave
         CreateDirectory "$SMPROGRAMS\SlimeVR Server"
         CreateShortcut "$SMPROGRAMS\SlimeVR Server\Uninstall SlimeVR Server.lnk" "$INSTDIR\uninstall.exe"
         CreateShortcut "$SMPROGRAMS\SlimeVR Server\SlimeVR Server.lnk" "$INSTDIR\slimevr-ui.exe" "" "$INSTDIR\run.ico"
+    ${Else}
+        Delete "$SMPROGRAMS\Uninstall SlimeVR Server.lnk"
+        Delete "$SMPROGRAMS\SlimeVR Server.lnk"
+        RMdir /r "$SMPROGRAMS\SlimeVR Server"
     ${Endif}
+
     ${If} $1 = 1
         CreateShortcut "$DESKTOP\SlimeVR Server.lnk" "$INSTDIR\slimevr-ui.exe" "" "$INSTDIR\run.ico"
+    ${Else}
+        Delete "$DESKTOP\SlimeVR Server.lnk"
     ${EndIf}
+    
     ${If} $2 = 1
         ExecShell "open" "https://docs.slimevr.dev/server-setup/slimevr-setup.html"
     ${EndIf}
