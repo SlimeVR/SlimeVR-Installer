@@ -378,6 +378,43 @@ Section "SlimeVR Server" SEC_SERVER
     WriteUninstaller "$INSTDIR\uninstall.exe"
 SectionEnd
 
+Section "Webview2" SEC_WEBVIEW
+    SectionIn RO
+    Var /GLOBAL webviewKeyA
+    Var /GLOBAL webviewKeyB
+
+
+    # detecting webview from the windows registry
+    ${If} ${RunningX64}
+        ReadRegStr $webviewKeyA HKLM "SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+        ReadRegStr $webviewKeyB HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+    ${Else}
+        ReadRegStr $webviewKeyA HKLM "SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+        ReadRegStr $webviewKeyB HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+    ${EndIf}
+
+    ${If} $webviewKeyA == 0 
+    ${AndIf} $webviewKeyB == 0
+        DetailPrint "Downloading webview2!"
+        ${If} ${RunningX64}
+            NScurl::http GET "https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/ddeb4108-ac3c-40d5-a327-f2a9c6d63fea/MicrosoftEdgeWebView2RuntimeInstallerX64.exe" "$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.zip" /CANCEL /RESUME /END
+        ${Else}
+            NScurl::http GET "https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/9cf41c35-7fef-477b-b26e-c239e33a40e2/MicrosoftEdgeWebView2RuntimeInstallerX86.exe" "$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.zip" /CANCEL /RESUME /END
+        ${EndIf}
+
+        DetailPrint "Installing webview2!"
+        nsExec::ExecToLog '"$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.zip" /silent /install' $0
+        Pop $0
+        DetailPrint "Installing finished with $0."
+        ${If} $0 != 0
+            Abort "Failed to install webview 2"
+        ${EndIf}
+    ${Else}
+        DetailPrint "Webview already installed. SKIP"
+    ${EndIf}
+
+SectionEnd
+
 Section "Java JRE" SEC_JRE
     SectionIn RO
     
@@ -573,6 +610,7 @@ Function componentsPre
         SectionSetFlags ${SEC_FIREWALL} 0
         SectionSetFlags ${SEC_REGISTERAPP} 0
         SectionSetFlags ${SEC_JRE} ${SF_SELECTED}
+        SectionSetFlags ${SEC_WEBVIEW} ${SF_SELECTED}
         SectionSetFlags ${SEC_USBDRIVERS} ${SF_SECGRP}
         SectionSetFlags ${SEC_VRDRIVER} ${SF_SELECTED}
         SectionSetFlags ${SEC_SERVER} ${SF_SELECTED}
@@ -645,6 +683,7 @@ SectionEnd
 
 LangString DESC_SEC_SERVER ${LANG_ENGLISH} "Installs latest SlimeVR Server."
 LangString DESC_SEC_JRE ${LANG_ENGLISH} "Downloads and copies Java JRE 17 to installation folder. Required for SlimeVR Server."
+LangString DESC_SEC_WEBVIEW ${LANG_ENGLISH} "Downloads and install Webview2 if not already installed. Required for the SlimeVR GUI"
 LangString DESC_SEC_VRDRIVER ${LANG_ENGLISH} "Installs latest SlimeVR Driver in SteamVR."
 LangString DESC_SEC_USBDRIVERS ${LANG_ENGLISH} "A list of USB drivers that are used by various boards."
 LangString DESC_SEC_FEEDER_APP ${LANG_ENGLISH} "Installs SlimeVR Feeder App that sends position of SteamVR trackers (Vive trackers, controllers) to SlimeVR Server. Required for elbow tracking."
@@ -655,6 +694,7 @@ LangString DESC_SEC_CH9102x ${LANG_ENGLISH} "Installs CH9102x USB driver that co
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_SERVER} $(DESC_SEC_SERVER)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_JRE} $(DESC_SEC_JRE)
+    !insertmacro MUI_DESCRIPTION_TEXT ${SEC_WEBVIEW} $(DESC_SEC_WEBVIEW)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_VRDRIVER} $(DESC_SEC_VRDRIVER)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_USBDRIVERS} $(DESC_SEC_USBDRIVERS)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_CP210X} $(DESC_SEC_CP210X)
