@@ -380,30 +380,23 @@ SectionEnd
 
 Section "Webview2" SEC_WEBVIEW
     SectionIn RO
-    Var /GLOBAL webviewKeyA
-    Var /GLOBAL webviewKeyB
-
 
     # detecting webview from the windows registry
     ${If} ${RunningX64}
-        ReadRegStr $webviewKeyA HKLM "SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
-        ReadRegStr $webviewKeyB HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+        ReadRegStr $0 HKLM "SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+        ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
     ${Else}
-        ReadRegStr $webviewKeyA HKLM "SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
-        ReadRegStr $webviewKeyB HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+        ReadRegStr $0 HKLM "SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+        ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
     ${EndIf}
 
-    ${If} $webviewKeyA == 0 
-    ${AndIf} $webviewKeyB == 0
+    ${If} $0 == ""
+    ${AndIf} $1 == ""
         DetailPrint "Downloading webview2!"
-        ${If} ${RunningX64}
-            NScurl::http GET "https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/ddeb4108-ac3c-40d5-a327-f2a9c6d63fea/MicrosoftEdgeWebView2RuntimeInstallerX64.exe" "$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.zip" /CANCEL /RESUME /END
-        ${Else}
-            NScurl::http GET "https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/9cf41c35-7fef-477b-b26e-c239e33a40e2/MicrosoftEdgeWebView2RuntimeInstallerX86.exe" "$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.zip" /CANCEL /RESUME /END
-        ${EndIf}
+        NScurl::http GET "https://go.microsoft.com/fwlink/p/?LinkId=2124703" "$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.exe" /CANCEL /RESUME /END
 
         DetailPrint "Installing webview2!"
-        nsExec::ExecToLog '"$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.zip" /silent /install' $0
+        nsExec::ExecToLog '"$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.exe" /silent /install' $0
         Pop $0
         DetailPrint "Installing finished with $0."
         ${If} $0 != 0
