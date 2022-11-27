@@ -302,10 +302,6 @@ Section "SlimeVR Server" SEC_SERVER
     DetailPrint "Copying SlimeVR Server to installation folder..."
     CopyFiles /SILENT "$TEMP\SlimeVR\SlimeVR\*" $INSTDIR
 
-    # Include modified run.bat that will run bundled JRE
-    File "run.bat"
-    File "run.ico"
-
     # Create the uninstaller
     WriteUninstaller "$INSTDIR\uninstall.exe"
 SectionEnd
