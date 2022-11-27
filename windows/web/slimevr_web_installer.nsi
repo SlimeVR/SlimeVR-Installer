@@ -213,7 +213,10 @@ Function endPage
 
     ${NSD_CreateCheckbox} 0 25u 100% 10u "Open SlimeVR documentation"
     Pop $OPEN_DOCUMENTATION
-    ${NSD_Check} $OPEN_DOCUMENTATION
+    # Don't open documentation if we're updating
+    ${If} $SELECTED_INSTALLER_ACTION == ""
+        ${NSD_Check} $OPEN_DOCUMENTATION
+    ${EndIf}
 
     ${NSD_CreateCheckbox} 0 40u 100% 10u "Create Desktop shortcut"
     Pop $CREATE_DESKTOP_SHORTCUT
@@ -433,14 +436,14 @@ Section "Java JRE" SEC_JRE
     CopyFiles /SILENT "$TEMP\$DownloadedJreFile\jdk-17.0.4.1+1-jre\*" "$INSTDIR\jre"
 SectionEnd
 
-Section "SlimeVR Driver" SEC_VRDRIVER
+Section "SteamVR Driver" SEC_VRDRIVER
     SetOutPath $INSTDIR
 
-    DetailPrint "Downloading SlimeVR Driver..."
+    DetailPrint "Downloading SteamVR Driver..."
     NScurl::http GET "https://github.com/SlimeVR/SlimeVR-OpenVR-Driver/releases/latest/download/slimevr-openvr-driver-win64.zip" "$TEMP\slimevr-openvr-driver-win64.zip" /CANCEL /RESUME /END
     Pop $0 ; Status text ("OK" for success)
     ${If} $0 != "OK"
-        Abort "Failed to download SlimeVR Driver. Reason: $0."
+        Abort "Failed to download SteamVR Driver. Reason: $0."
     ${EndIf}
     DetailPrint "Downloaded!"
 
@@ -452,14 +455,14 @@ Section "SlimeVR Driver" SEC_VRDRIVER
     # Include SteamVR powershell script to register/unregister driver
     File "steamvr.ps1"
 
-    DetailPrint "Copying SlimeVR Driver to SteamVR..."
+    DetailPrint "Copying SteamVR Driver to SteamVR..."
     ${If} $STEAMVRDIR == ""
         ${DisableX64FSRedirection}
         nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Bypass -File "$INSTDIR\steamvr.ps1" -SteamPath "$STEAMDIR" -DriverPath "$TEMP\slimevr-openvr-driver-win64\slimevr"' $0
         ${EnableX64FSRedirection}
         Pop $0
         ${If} $0 != 0
-            Abort "Failed to copy SlimeVR Driver."
+            Abort "Failed to copy SteamVR Driver."
         ${EndIf}
     ${Else}
         CopyFiles /SILENT "$TEMP\slimevr-openvr-driver-win64\slimevr" "$STEAMVRDIR\drivers\slimevr"
@@ -638,13 +641,13 @@ Section "-un.SlimeVR Server" un.SEC_SERVER
     success:
 SectionEnd
 
-Section "-un.SlimeVR Driver" un.SEC_VRDRIVER
+Section "-un.SteamVR Driver" un.SEC_VRDRIVER
     ${DisableX64FSRedirection}
     nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Bypass -File "$INSTDIR\steamvr.ps1" -SteamPath "$STEAMDIR" -DriverPath "slimevr" -Uninstall' $0
     ${EnableX64FSRedirection}
     Pop $0
     ${If} $0 != 0
-        DetailPrint "Failed to remove SlimeVR Driver."
+        DetailPrint "Failed to remove SteamVR Driver."
     ${EndIf}
     Delete "$INSTDIR\steamvr.ps1"
 SectionEnd
@@ -677,7 +680,7 @@ SectionEnd
 LangString DESC_SEC_SERVER ${LANG_ENGLISH} "Installs latest SlimeVR Server."
 LangString DESC_SEC_JRE ${LANG_ENGLISH} "Downloads and copies Java JRE 17 to installation folder. Required for SlimeVR Server."
 LangString DESC_SEC_WEBVIEW ${LANG_ENGLISH} "Downloads and install Webview2 if not already installed. Required for the SlimeVR GUI"
-LangString DESC_SEC_VRDRIVER ${LANG_ENGLISH} "Installs latest SlimeVR Driver in SteamVR."
+LangString DESC_SEC_VRDRIVER ${LANG_ENGLISH} "Installs latest SteamVR Driver for SlimeVR."
 LangString DESC_SEC_USBDRIVERS ${LANG_ENGLISH} "A list of USB drivers that are used by various boards."
 LangString DESC_SEC_FEEDER_APP ${LANG_ENGLISH} "Installs SlimeVR Feeder App that sends position of SteamVR trackers (Vive trackers, controllers) to SlimeVR Server. Required for elbow tracking."
 LangString DESC_SEC_CP210X ${LANG_ENGLISH} "Installs CP210X USB driver that comes with the following boards: NodeMCU v2, Wemos D1 Mini."
