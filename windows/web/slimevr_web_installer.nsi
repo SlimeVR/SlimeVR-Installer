@@ -214,8 +214,7 @@ Function endPage
     ${NSD_CreateCheckbox} 0 25u 100% 10u "Open SlimeVR documentation"
     Pop $OPEN_DOCUMENTATION
     # Don't open documentation if we're updating
-    ${NSD_GetState} $UPDATE $0
-    ${If} $0 = 0
+    ${If} $SELECTED_INSTALLER_ACTION == ""
         ${NSD_Check} $OPEN_DOCUMENTATION
     ${EndIf}
 
