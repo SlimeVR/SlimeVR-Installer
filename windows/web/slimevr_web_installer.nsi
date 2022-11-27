@@ -211,7 +211,7 @@ Function endPageLeave
     ${If} $0 = 1
         CreateDirectory "$SMPROGRAMS\SlimeVR Server"
         CreateShortcut "$SMPROGRAMS\SlimeVR Server\Uninstall SlimeVR Server.lnk" "$INSTDIR\uninstall.exe"
-        CreateShortcut "$SMPROGRAMS\SlimeVR Server\SlimeVR Server.lnk" "$INSTDIR\slimevr-ui.exe" "" "$INSTDIR\run.ico"
+        CreateShortcut "$SMPROGRAMS\SlimeVR Server\SlimeVR Server.lnk" "$INSTDIR\slimevr.exe" "" "$INSTDIR\run.ico"
     ${Else}
         Delete "$SMPROGRAMS\Uninstall SlimeVR Server.lnk"
         Delete "$SMPROGRAMS\SlimeVR Server.lnk"
@@ -219,7 +219,7 @@ Function endPageLeave
     ${Endif}
 
     ${If} $1 = 1
-        CreateShortcut "$DESKTOP\SlimeVR Server.lnk" "$INSTDIR\slimevr-ui.exe" "" "$INSTDIR\run.ico"
+        CreateShortcut "$DESKTOP\SlimeVR Server.lnk" "$INSTDIR\slimevr.exe" "" "$INSTDIR\run.ico"
     ${Else}
         Delete "$DESKTOP\SlimeVR Server.lnk"
     ${EndIf}
