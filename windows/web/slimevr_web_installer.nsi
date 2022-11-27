@@ -48,35 +48,10 @@ Var OPEN_DOCUMENTATION
 # Detected Steam folder
 Var STEAMDIR
 
-# Detected or specified SteamVR folder
-Var STEAMVRDIR
-Var STEAMVRDIR_TEXT
-Var STEAMVRDIR_DEST
-
 # Init functions start #
 # Detect Steam installation and prevent installation if none found
 Function .onInit
     InitPluginsDir
-    ${If} ${RunningX64}
-        ReadRegStr $0 HKLM SOFTWARE\WOW6432Node\Valve\Steam InstallPath
-    ${Else}
-        ReadRegStr $0 HKLM SOFTWARE\Valve\Steam InstallPath
-    ${EndIf}
-    ${If} $0 == ""
-        MessageBox MB_OK "No Steam installation folder detected."
-        Abort
-    ${EndIf}
-    StrCpy $STEAMDIR $0
-FunctionEnd
-
-# Detect Steam installation and just write path that we need to remove during uninstall (if present)
-Function un.onInit
-    ${If} ${RunningX64}
-        ReadRegStr $0 HKLM SOFTWARE\WOW6432Node\Valve\Steam InstallPath
-    ${Else}
-        ReadRegStr $0 HKLM SOFTWARE\Valve\Steam InstallPath
-    ${EndIf}
-    StrCpy $STEAMDIR $0
 FunctionEnd
 
 # Clean up on exit
@@ -135,8 +110,6 @@ Page Custom startPage startPageLeave
 
 !define MUI_PAGE_CUSTOMFUNCTION_PRE installerActionPre
 !insertmacro MUI_PAGE_DIRECTORY
-
-Page Custom steamVrDirectoryPage
 
 !define MUI_PAGE_CUSTOMFUNCTION_PRE cleanTemp ; Clean temp on pre-install to avoid any leftover files failing the installation, temp files will be removed in .onGUIEnd
 !insertmacro MUI_PAGE_INSTFILES
@@ -255,47 +228,6 @@ Function endPageLeave
         ExecShell "open" "https://docs.slimevr.dev/server-setup/slimevr-setup.html"
     ${EndIf}
 
-FunctionEnd
-
-Function steamVrDirectoryPage
-
-    # If powershell is present - rely on automatic detection.
-    ${DisableX64FSRedirection}
-    nsExec::Exec "$SYSDIR\WindowsPowerShell\v1.0\powershell.exe Get-Host" $0
-    ${EnableX64FSRedirection}
-    Pop $0
-    ${If} $0 == 0
-        Abort
-    ${Endif}
-
-    #Create Dialog and quit if error
-    nsDialogs::Create 1018
-    Pop $0
-    ${If} $0 == error
-        Abort
-    ${EndIf}
-
-    StrCpy $STEAMVRDIR "$STEAMDIR\steamapps\common\SteamVR"
-    ${NSD_CreateLabel} 0 0 100% 20u "Specify a path to your SteamVR installation by clicking Browse. Then click Install to proceed with installation."
-    ${NSD_CreateLabel} 0 60 100% 12u "Destination folder:"
-    ${NSD_CreateText} 0 80 80% 12u "$STEAMDIR\steamapps\common\SteamVR"
-    Pop $STEAMVRDIR_TEXT
-    ${NSD_CreateBrowseButton} 320 80 20% 12u "Browse"
-    Pop $0
-
-    ${NSD_OnClick} $0 browseDest
-
-    nsDialogs::Show
-FunctionEnd
-
-Function browseDest
-    nsDialogs::SelectFolderDialog "Select SteamVR installation folder" "$STEAMDIR\steamapps\common\SteamVR"
-    Pop $STEAMVRDIR_DEST
-    ${If} $STEAMVRDIR_DEST == error
-        Abort
-    ${Endif}
-    StrCpy $STEAMVRDIR $STEAMVRDIR_DEST
-    ${NSD_SetText} $STEAMVRDIR_TEXT $STEAMVRDIR_DEST
 FunctionEnd
 
 # Pre-hook for directory selection function
@@ -436,6 +368,17 @@ SectionEnd
 Section "SlimeVR Driver" SEC_VRDRIVER
     SetOutPath $INSTDIR
 
+    # Detect Steam installation
+    ${If} ${RunningX64}
+        ReadRegStr $0 HKLM SOFTWARE\WOW6432Node\Valve\Steam InstallPath
+    ${Else}
+        ReadRegStr $0 HKLM SOFTWARE\Valve\Steam InstallPath
+    ${EndIf}
+    ${If} $0 == ""
+        Abort "No Steam installation folder detected."
+    ${EndIf}
+    StrCpy $STEAMDIR $0
+
     DetailPrint "Downloading SlimeVR Driver..."
     NScurl::http GET "https://github.com/SlimeVR/SlimeVR-OpenVR-Driver/releases/latest/download/slimevr-openvr-driver-win64.zip" "$TEMP\slimevr-openvr-driver-win64.zip" /CANCEL /RESUME /END
     Pop $0 ; Status text ("OK" for success)
@@ -453,17 +396,19 @@ Section "SlimeVR Driver" SEC_VRDRIVER
     File "steamvr.ps1"
 
     DetailPrint "Copying SlimeVR Driver to SteamVR..."
-    ${If} $STEAMVRDIR == ""
-        ${DisableX64FSRedirection}
-        nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Bypass -File "$INSTDIR\steamvr.ps1" -SteamPath "$STEAMDIR" -DriverPath "$TEMP\slimevr-openvr-driver-win64\slimevr"' $0
-        ${EnableX64FSRedirection}
+    # If powershell is present - rely on automatic detection.
+    ${DisableX64FSRedirection}
+    nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Bypass -File "$INSTDIR\steamvr.ps1" -SteamPath "$STEAMDIR" -DriverPath "$TEMP\slimevr-openvr-driver-win64\slimevr"' $0
+    ${EnableX64FSRedirection}
+    Pop $0
+    ${If} $0 != 0
+        nsDialogs::SelectFolderDialog "Specify a path to your SteamVR folder" "$STEAMDIR\steamapps\common\SteamVR"
         Pop $0
-        ${If} $0 != 0
+        ${If} $0 == "error"
             Abort "Failed to copy SlimeVR Driver."
-        ${EndIf}
-    ${Else}
-        CopyFiles /SILENT "$TEMP\slimevr-openvr-driver-win64\slimevr" "$STEAMVRDIR\drivers\slimevr"
-    ${Endif}
+        ${Endif}
+        CopyFiles /SILENT "$TEMP\slimevr-openvr-driver-win64\slimevr" "$0\drivers\slimevr"
+    ${EndIf}
 SectionEnd
 
 Section "SlimeVR Feeder App" SEC_FEEDER_APP
@@ -639,6 +584,14 @@ Section "-un.SlimeVR Server" un.SEC_SERVER
 SectionEnd
 
 Section "-un.SlimeVR Driver" un.SEC_VRDRIVER
+    # Detect Steam installation
+    ${If} ${RunningX64}
+        ReadRegStr $0 HKLM SOFTWARE\WOW6432Node\Valve\Steam InstallPath
+    ${Else}
+        ReadRegStr $0 HKLM SOFTWARE\Valve\Steam InstallPath
+    ${EndIf}
+    StrCpy $STEAMDIR $0
+
     ${DisableX64FSRedirection}
     nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Bypass -File "$INSTDIR\steamvr.ps1" -SteamPath "$STEAMDIR" -DriverPath "slimevr" -Uninstall' $0
     ${EnableX64FSRedirection}
