@@ -285,6 +285,10 @@ Section "SlimeVR Server" SEC_SERVER
 
     SetOutPath $INSTDIR
 
+    ${If} $SELECTED_INSTALLER_ACTION == "update"
+        Rename "$INSTDIR\slimevr-ui.exe" "$INSTDIR\slimevr.exe"
+    ${EndIf}
+
     DetailPrint "Downloading SlimeVR Server..."
     NScurl::http GET "https://github.com/SlimeVR/SlimeVR-Server/releases/latest/download/SlimeVR-win64.zip" "$TEMP\SlimeVR-win64.zip" /CANCEL /RESUME /END
     Pop $0 ; Status text ("OK" for success)
@@ -299,6 +303,12 @@ Section "SlimeVR Server" SEC_SERVER
 
     DetailPrint "Copying SlimeVR Server to installation folder..."
     CopyFiles /SILENT "$TEMP\SlimeVR\SlimeVR\*" $INSTDIR
+
+    ${If} $SELECTED_INSTALLER_ACTION == "update"
+        Delete "$INSTDIR\slimevr-ui.exe"
+        Delete "$INSTDIR\run.bat"
+        Delete "$INSTDIR\run.ico"
+    ${EndIf}
 
     # Create the uninstaller
     WriteUninstaller "$INSTDIR\uninstall.exe"
@@ -554,7 +564,7 @@ Section "-un.SlimeVR Server" un.SEC_SERVER
 
     Delete "$INSTDIR\run.bat"
     Delete "$INSTDIR\run.ico"
-    Delete "$INSTDIR\slimevr.jar"
+    Delete "$INSTDIR\slimevr*"
     Delete "$INSTDIR\MagnetoLib.dll"
     Delete "$INSTDIR\log*"
     Delete "$INSTDIR\*.log"
