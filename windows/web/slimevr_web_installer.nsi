@@ -6,6 +6,7 @@ Unicode True
 !include FileFunc.nsh   ; For GetTime function
 !include MUI2.nsh
 
+!define SF_USELECTED  0
 !define MUI_ICON "run.ico"
 !define MUI_HEADERIMAGE
 !define MUI_HEADERIMAGE_BITMAP "logo.bmp"
@@ -51,6 +52,22 @@ Var STEAMDIR
 # Init functions start #
 Function .onInit
     InitPluginsDir
+    ${If} ${RunningX64}
+        ReadRegStr $0 HKLM SOFTWARE\WOW6432Node\Valve\Steam InstallPath
+    ${Else}
+        ReadRegStr $0 HKLM SOFTWARE\Valve\Steam InstallPath
+    ${EndIf}
+    StrCpy $STEAMDIR $0
+FunctionEnd
+
+# Detect Steam installation and just write path that we need to remove during uninstall (if present)
+Function un.onInit
+    ${If} ${RunningX64}
+        ReadRegStr $0 HKLM SOFTWARE\WOW6432Node\Valve\Steam InstallPath
+    ${Else}
+        ReadRegStr $0 HKLM SOFTWARE\Valve\Steam InstallPath
+    ${EndIf}
+    StrCpy $STEAMDIR $0
 FunctionEnd
 
 # Clean up on exit
@@ -372,17 +389,6 @@ SectionEnd
 Section "SteamVR Driver" SEC_VRDRIVER
     SetOutPath $INSTDIR
 
-    # Detect Steam installation
-    ${If} ${RunningX64}
-        ReadRegStr $0 HKLM SOFTWARE\WOW6432Node\Valve\Steam InstallPath
-    ${Else}
-        ReadRegStr $0 HKLM SOFTWARE\Valve\Steam InstallPath
-    ${EndIf}
-    ${If} $0 == ""
-        Abort "No Steam installation folder detected."
-    ${EndIf}
-    StrCpy $STEAMDIR $0
-
     DetailPrint "Downloading SteamVR Driver..."
     NScurl::http GET "https://github.com/SlimeVR/SlimeVR-OpenVR-Driver/releases/latest/download/slimevr-openvr-driver-win64.zip" "$TEMP\slimevr-openvr-driver-win64.zip" /CANCEL /RESUME /END
     Pop $0 ; Status text ("OK" for success)
@@ -438,7 +444,7 @@ Section "SlimeVR Feeder App" SEC_FEEDER_APP
     nsExec::ExecToLog '"$INSTDIR\Feeder-App\SlimeVR-Feeder-App.exe" --install'
 SectionEnd
 
-SectionGroup "USB drivers" SEC_USBDRIVERS
+SectionGroup /e "USB drivers" SEC_USBDRIVERS
 
     Section "CP210x driver" SEC_CP210X
         # CP210X drivers (NodeMCU v2)
@@ -554,9 +560,33 @@ Function componentsPre
         SectionSetFlags ${SEC_JRE} ${SF_SELECTED}
         SectionSetFlags ${SEC_WEBVIEW} ${SF_SELECTED}
         SectionSetFlags ${SEC_USBDRIVERS} ${SF_SECGRP}
-        SectionSetFlags ${SEC_VRDRIVER} ${SF_SELECTED}
         SectionSetFlags ${SEC_SERVER} ${SF_SELECTED}
     ${EndIf}
+    ${If} $STEAMDIR == ""
+        MessageBox MB_OK $(DESC_STEAM_NOTFOUND)
+        SectionSetFlags ${SEC_VRDRIVER} ${SF_USELECTED}|${SF_RO}
+        SectionSetFlags ${SEC_FEEDER_APP} ${SF_USELECTED}|${SF_RO}
+    ${Else}
+        SectionSetFlags ${SEC_VRDRIVER} ${SF_SELECTED}
+        SectionSetFlags ${SEC_FEEDER_APP} ${SF_SELECTED}
+    ${EndIf}
+
+    # Detect WebView2
+    ${If} ${RunningX64}
+        ReadRegStr $0 HKLM "SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+        ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+    ${Else}
+        ReadRegStr $0 HKLM "SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+        ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+    ${EndIf}
+
+    ${If} $0 == ""
+    ${AndIf} $1 == ""
+        SectionSetFlags ${SEC_WEBVIEW} ${SF_SELECTED}|${SF_RO}
+    ${Else}
+        SectionSetFlags ${SEC_WEBVIEW} ${SF_USELECTED}|${SF_RO}
+    ${EndIf}
+
 FunctionEnd
 
 Section "-un.SlimeVR Server" un.SEC_SERVER
@@ -566,9 +596,11 @@ Section "-un.SlimeVR Server" un.SEC_SERVER
     Delete "$SMPROGRAMS\Uninstall SlimeVR Server.lnk"
     Delete "$SMPROGRAMS\SlimeVR Server.lnk"
     Delete "$DESKTOP\SlimeVR Server.lnk"
-
+    Delete "$INSTDIR\slimevr-ui.exe"
     Delete "$INSTDIR\run.bat"
     Delete "$INSTDIR\run.ico"
+    # Ignore errors on the files above, they are optional to remove and may not even exist
+    ClearErrors
     Delete "$INSTDIR\slimevr*"
     Delete "$INSTDIR\MagnetoLib.dll"
     Delete "$INSTDIR\log*"
@@ -576,6 +608,7 @@ Section "-un.SlimeVR Server" un.SEC_SERVER
     Delete "$INSTDIR\*.lck"
     Delete "$INSTDIR\vrconfig.yml"
     Delete "$INSTDIR\LICENSE*"
+    Delete "$INSTDIR\ThirdPartyNotices.txt"
 
     RMDir /r "$INSTDIR\Recordings"
     RMdir /r "$INSTDIR\jre"
@@ -588,14 +621,6 @@ Section "-un.SlimeVR Server" un.SEC_SERVER
 SectionEnd
 
 Section "-un.SteamVR Driver" un.SEC_VRDRIVER
-    # Detect Steam installation
-    ${If} ${RunningX64}
-        ReadRegStr $0 HKLM SOFTWARE\WOW6432Node\Valve\Steam InstallPath
-    ${Else}
-        ReadRegStr $0 HKLM SOFTWARE\Valve\Steam InstallPath
-    ${EndIf}
-    StrCpy $STEAMDIR $0
-
     ${DisableX64FSRedirection}
     nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Bypass -File "$INSTDIR\steamvr.ps1" -SteamPath "$STEAMDIR" -DriverPath "slimevr" -Uninstall' $0
     ${EnableX64FSRedirection}
@@ -640,6 +665,7 @@ LangString DESC_SEC_FEEDER_APP ${LANG_ENGLISH} "Installs SlimeVR Feeder App that
 LangString DESC_SEC_CP210X ${LANG_ENGLISH} "Installs CP210X USB driver that comes with the following boards: NodeMCU v2, Wemos D1 Mini."
 LangString DESC_SEC_CH340 ${LANG_ENGLISH} "Installs CH340 USB driver that comes with the following boards: NodeMCU v3, SlimeVR, Wemos D1 Mini."
 LangString DESC_SEC_CH9102x ${LANG_ENGLISH} "Installs CH9102x USB driver that comes with the following boards: NodeMCU v2.1."
+LangString DESC_STEAM_NOTFOUND ${LANG_ENGLISH} "No Steam installation detected. Steam and SteamVR are required to be installed and run at least once to install the SteamVR Driver."
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_SERVER} $(DESC_SEC_SERVER)
