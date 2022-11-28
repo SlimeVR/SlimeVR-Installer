@@ -287,10 +287,6 @@ Section "SlimeVR Server" SEC_SERVER
 
     SetOutPath $INSTDIR
 
-    ${If} $SELECTED_INSTALLER_ACTION == "update"
-        Rename "$INSTDIR\slimevr-ui.exe" "$INSTDIR\slimevr.exe"
-    ${EndIf}
-
     DetailPrint "Downloading SlimeVR Server..."
     NScurl::http GET "https://github.com/SlimeVR/SlimeVR-Server/releases/latest/download/SlimeVR-win64.zip" "$TEMP\SlimeVR-win64.zip" /CANCEL /RESUME /END
     Pop $0 ; Status text ("OK" for success)
@@ -303,15 +299,22 @@ Section "SlimeVR Server" SEC_SERVER
     Pop $0
     DetailPrint "Unzipping finished with $0."
 
+    ${If} $SELECTED_INSTALLER_ACTION == "update"
+        Delete "$INSTDIR\slimevr-ui.exe"
+    ${EndIf}
+
     DetailPrint "Copying SlimeVR Server to installation folder..."
     CopyFiles /SILENT "$TEMP\SlimeVR\SlimeVR\*" $INSTDIR
 
-    ${If} $SELECTED_INSTALLER_ACTION == "update"
-        Delete "$INSTDIR\slimevr-ui.exe"
-        Delete "$INSTDIR\run.bat"
-        Delete "$INSTDIR\run.ico"
-    ${EndIf}
+    IfFileExists "$INSTDIR\slimevr-ui.exe" found not_found
+    found:
+        Delete "$INSTDIR\slimevr.exe"
+        Rename "$INSTDIR\slimevr-ui.exe" "$INSTDIR\slimevr.exe"
+    not_found:
 
+    Delete "$INSTDIR\run.bat"
+    Delete "$INSTDIR\run.ico"
+    
     # Create the uninstaller
     WriteUninstaller "$INSTDIR\uninstall.exe"
 SectionEnd
