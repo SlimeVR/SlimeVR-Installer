@@ -516,7 +516,7 @@ Section "-" SEC_REGISTERAPP
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
                     "UninstallString" '"$INSTDIR\uninstall.exe"'
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
-                    "DisplayIcon" "$INSTDIR\run.ico"
+                    "DisplayIcon" "$INSTDIR\slimevr.exe"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
                     "HelpLink" "https://docs.slimevr.dev/"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
