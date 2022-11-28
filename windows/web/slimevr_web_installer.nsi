@@ -49,7 +49,6 @@ Var OPEN_DOCUMENTATION
 Var STEAMDIR
 
 # Init functions start #
-# Detect Steam installation and prevent installation if none found
 Function .onInit
     InitPluginsDir
 FunctionEnd
