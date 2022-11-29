@@ -339,29 +339,16 @@ SectionEnd
 Section "Webview2" SEC_WEBVIEW
     SectionIn RO
 
-    # detecting webview from the windows registry
-    ${If} ${RunningX64}
-        ReadRegStr $0 HKLM "SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
-        ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
-    ${Else}
-        ReadRegStr $0 HKLM "SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
-        ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
-    ${EndIf}
+    # Read Only protects it from Installing when it is not needed
+    DetailPrint "Downloading webview2!"
+    NScurl::http GET "https://go.microsoft.com/fwlink/p/?LinkId=2124703" "$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.exe" /CANCEL /RESUME /END
 
-    ${If} $0 == ""
-    ${AndIf} $1 == ""
-        DetailPrint "Downloading webview2!"
-        NScurl::http GET "https://go.microsoft.com/fwlink/p/?LinkId=2124703" "$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.exe" /CANCEL /RESUME /END
-
-        DetailPrint "Installing webview2!"
-        nsExec::ExecToLog '"$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.exe" /silent /install' $0
-        Pop $0
-        DetailPrint "Installing finished with $0."
-        ${If} $0 != 0
-            Abort "Failed to install webview 2"
-        ${EndIf}
-    ${Else}
-        DetailPrint "Webview already installed. SKIP"
+    DetailPrint "Installing webview2!"
+    nsExec::ExecToLog '"$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.exe" /silent /install' $0
+    Pop $0
+    DetailPrint "Installing finished with $0."
+    ${If} $0 != 0
+        Abort "Failed to install webview 2"
     ${EndIf}
 
 SectionEnd
