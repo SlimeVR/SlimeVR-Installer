@@ -28,7 +28,7 @@ InstallDir "$PROGRAMFILES\SlimeVR Server" ; $InstDir default value. Defaults to 
 ShowInstDetails show
 ShowUninstDetails show
 
-BrandingText "SlimeVR Installer 0.1.8"
+BrandingText "SlimeVR Installer 0.1.9"
 
 # Admin rights are required for:
 # 1. Removing Start Menu shortcut in Windows 7+
