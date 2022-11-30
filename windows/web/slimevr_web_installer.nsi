@@ -6,6 +6,7 @@ Unicode True
 !include FileFunc.nsh   ; For GetTime function
 !include MUI2.nsh
 
+!define SF_USELECTED  0
 !define MUI_ICON "run.ico"
 !define MUI_HEADERIMAGE
 !define MUI_HEADERIMAGE_BITMAP "logo.bmp"
@@ -48,23 +49,13 @@ Var OPEN_DOCUMENTATION
 # Detected Steam folder
 Var STEAMDIR
 
-# Detected or specified SteamVR folder
-Var STEAMVRDIR
-Var STEAMVRDIR_TEXT
-Var STEAMVRDIR_DEST
-
 # Init functions start #
-# Detect Steam installation and prevent installation if none found
 Function .onInit
     InitPluginsDir
     ${If} ${RunningX64}
         ReadRegStr $0 HKLM SOFTWARE\WOW6432Node\Valve\Steam InstallPath
     ${Else}
         ReadRegStr $0 HKLM SOFTWARE\Valve\Steam InstallPath
-    ${EndIf}
-    ${If} $0 == ""
-        MessageBox MB_OK "No Steam installation folder detected."
-        Abort
     ${EndIf}
     StrCpy $STEAMDIR $0
 FunctionEnd
@@ -82,13 +73,11 @@ FunctionEnd
 # Clean up on exit
 Function cleanTemp
     Delete "$TEMP\slimevr-openvr-driver-win64.zip"
-    Delete "$TEMP\SlimeVR.zip"
+    Delete "$TEMP\SlimeVR-win64.zip"
     Delete "$TEMP\OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip"
-    Delete "$TEMP\OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1.zip"
     Delete "$TEMP\SlimeVR-Feeder-App-win64.zip"
     RMDir /r "$TEMP\slimevr-openvr-driver-win64"
     RMDir /r "$TEMP\SlimeVR"
-    RMDir /r "$TEMP\OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1"
     RMDir /r "$TEMP\OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1"
     RMDir /r "$TEMP\slimevr_usb_drivers_inst"
     RMDir /r "$TEMP\SlimeVR-Feeder-App-win64"
@@ -135,8 +124,6 @@ Page Custom startPage startPageLeave
 
 !define MUI_PAGE_CUSTOMFUNCTION_PRE installerActionPre
 !insertmacro MUI_PAGE_DIRECTORY
-
-Page Custom steamVrDirectoryPage
 
 !define MUI_PAGE_CUSTOMFUNCTION_PRE cleanTemp ; Clean temp on pre-install to avoid any leftover files failing the installation, temp files will be removed in .onGUIEnd
 !insertmacro MUI_PAGE_INSTFILES
@@ -241,7 +228,7 @@ Function endPageLeave
     ${If} $0 = 1
         CreateDirectory "$SMPROGRAMS\SlimeVR Server"
         CreateShortcut "$SMPROGRAMS\SlimeVR Server\Uninstall SlimeVR Server.lnk" "$INSTDIR\uninstall.exe"
-        CreateShortcut "$SMPROGRAMS\SlimeVR Server\SlimeVR Server.lnk" "$INSTDIR\slimevr-ui.exe" "" "$INSTDIR\run.ico"
+        CreateShortcut "$SMPROGRAMS\SlimeVR Server\SlimeVR Server.lnk" "$INSTDIR\slimevr.exe" ""
     ${Else}
         Delete "$SMPROGRAMS\Uninstall SlimeVR Server.lnk"
         Delete "$SMPROGRAMS\SlimeVR Server.lnk"
@@ -249,7 +236,7 @@ Function endPageLeave
     ${Endif}
 
     ${If} $1 = 1
-        CreateShortcut "$DESKTOP\SlimeVR Server.lnk" "$INSTDIR\slimevr-ui.exe" "" "$INSTDIR\run.ico"
+        CreateShortcut "$DESKTOP\SlimeVR Server.lnk" "$INSTDIR\slimevr.exe" ""
     ${Else}
         Delete "$DESKTOP\SlimeVR Server.lnk"
     ${EndIf}
@@ -258,47 +245,6 @@ Function endPageLeave
         ExecShell "open" "https://docs.slimevr.dev/server-setup/slimevr-setup.html"
     ${EndIf}
 
-FunctionEnd
-
-Function steamVrDirectoryPage
-
-    # If powershell is present - rely on automatic detection.
-    ${DisableX64FSRedirection}
-    nsExec::Exec "$SYSDIR\WindowsPowerShell\v1.0\powershell.exe Get-Host" $0
-    ${EnableX64FSRedirection}
-    Pop $0
-    ${If} $0 == 0
-        Abort
-    ${Endif}
-
-    #Create Dialog and quit if error
-    nsDialogs::Create 1018
-    Pop $0
-    ${If} $0 == error
-        Abort
-    ${EndIf}
-
-    StrCpy $STEAMVRDIR "$STEAMDIR\steamapps\common\SteamVR"
-    ${NSD_CreateLabel} 0 0 100% 20u "Specify a path to your SteamVR installation by clicking Browse. Then click Install to proceed with installation."
-    ${NSD_CreateLabel} 0 60 100% 12u "Destination folder:"
-    ${NSD_CreateText} 0 80 80% 12u "$STEAMDIR\steamapps\common\SteamVR"
-    Pop $STEAMVRDIR_TEXT
-    ${NSD_CreateBrowseButton} 320 80 20% 12u "Browse"
-    Pop $0
-
-    ${NSD_OnClick} $0 browseDest
-
-    nsDialogs::Show
-FunctionEnd
-
-Function browseDest
-    nsDialogs::SelectFolderDialog "Select SteamVR installation folder" "$STEAMDIR\steamapps\common\SteamVR"
-    Pop $STEAMVRDIR_DEST
-    ${If} $STEAMVRDIR_DEST == error
-        Abort
-    ${Endif}
-    StrCpy $STEAMVRDIR $STEAMVRDIR_DEST
-    ${NSD_SetText} $STEAMVRDIR_TEXT $STEAMVRDIR_DEST
 FunctionEnd
 
 # Pre-hook for directory selection function
@@ -359,24 +305,33 @@ Section "SlimeVR Server" SEC_SERVER
     SetOutPath $INSTDIR
 
     DetailPrint "Downloading SlimeVR Server..."
-    NScurl::http GET "https://github.com/SlimeVR/SlimeVR-Server/releases/latest/download/SlimeVR.zip" "$TEMP\SlimeVR.zip" /CANCEL /RESUME /END
+    NScurl::http GET "https://github.com/SlimeVR/SlimeVR-Server/releases/latest/download/SlimeVR-win64.zip" "$TEMP\SlimeVR-win64.zip" /CANCEL /RESUME /END
     Pop $0 ; Status text ("OK" for success)
     ${If} $0 != "OK"
         Abort "Failed to download SlimeVR Server. Reason: $0."
     ${EndIf}
     DetailPrint "Downloaded!"
 
-    nsisunz::Unzip "$TEMP\SlimeVR.zip" "$TEMP\SlimeVR\"
+    nsisunz::Unzip "$TEMP\SlimeVR-win64.zip" "$TEMP\SlimeVR\"
     Pop $0
     DetailPrint "Unzipping finished with $0."
+
+    ${If} $SELECTED_INSTALLER_ACTION == "update"
+        Delete "$INSTDIR\slimevr-ui.exe"
+    ${EndIf}
 
     DetailPrint "Copying SlimeVR Server to installation folder..."
     CopyFiles /SILENT "$TEMP\SlimeVR\SlimeVR\*" $INSTDIR
 
-    # Include modified run.bat that will run bundled JRE
-    File "run.bat"
-    File "run.ico"
+    IfFileExists "$INSTDIR\slimevr-ui.exe" found not_found
+    found:
+        Delete "$INSTDIR\slimevr.exe"
+        Rename "$INSTDIR\slimevr-ui.exe" "$INSTDIR\slimevr.exe"
+    not_found:
 
+    Delete "$INSTDIR\run.bat"
+    Delete "$INSTDIR\run.ico"
+    
     # Create the uninstaller
     WriteUninstaller "$INSTDIR\uninstall.exe"
 SectionEnd
@@ -384,29 +339,16 @@ SectionEnd
 Section "Webview2" SEC_WEBVIEW
     SectionIn RO
 
-    # detecting webview from the windows registry
-    ${If} ${RunningX64}
-        ReadRegStr $0 HKLM "SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
-        ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
-    ${Else}
-        ReadRegStr $0 HKLM "SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
-        ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
-    ${EndIf}
+    # Read Only protects it from Installing when it is not needed
+    DetailPrint "Downloading webview2!"
+    NScurl::http GET "https://go.microsoft.com/fwlink/p/?LinkId=2124703" "$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.exe" /CANCEL /RESUME /END
 
-    ${If} $0 == ""
-    ${AndIf} $1 == ""
-        DetailPrint "Downloading webview2!"
-        NScurl::http GET "https://go.microsoft.com/fwlink/p/?LinkId=2124703" "$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.exe" /CANCEL /RESUME /END
-
-        DetailPrint "Installing webview2!"
-        nsExec::ExecToLog '"$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.exe" /silent /install' $0
-        Pop $0
-        DetailPrint "Installing finished with $0."
-        ${If} $0 != 0
-            Abort "Failed to install webview 2"
-        ${EndIf}
-    ${Else}
-        DetailPrint "Webview already installed. SKIP"
+    DetailPrint "Installing webview2!"
+    nsExec::ExecToLog '"$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.exe" /silent /install' $0
+    Pop $0
+    DetailPrint "Installing finished with $0."
+    ${If} $0 != 0
+        Abort "Failed to install webview 2"
     ${EndIf}
 
 SectionEnd
@@ -416,13 +358,8 @@ Section "Java JRE" SEC_JRE
     
     Var /GLOBAL DownloadedJreFile
     DetailPrint "Downloading Java JRE 17..."
-    ${If} ${RunningX64}
-        NScurl::http GET "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.4.1%2B1/OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip" "$TEMP\OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip" /CANCEL /RESUME /END
-        StrCpy $DownloadedJreFile "OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1"
-    ${Else}
-        NScurl::http GET "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.4.1%2B1/OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1.zip" "$TEMP\OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1.zip" /CANCEL /RESUME /END
-        StrCpy $DownloadedJreFile "OpenJDK17U-jre_x86-32_windows_hotspot_17.0.4.1_1"
-    ${EndIf}
+    NScurl::http GET "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.4.1%2B1/OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip" "$TEMP\OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip" /CANCEL /RESUME /END
+    StrCpy $DownloadedJreFile "OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1"
     Pop $0 ; Status text ("OK" for success)
     ${If} $0 != "OK"
         Abort "Failed to download Java JRE 17. Reason: $0."
@@ -456,17 +393,19 @@ Section "SteamVR Driver" SEC_VRDRIVER
     File "steamvr.ps1"
 
     DetailPrint "Copying SteamVR Driver to SteamVR..."
-    ${If} $STEAMVRDIR == ""
-        ${DisableX64FSRedirection}
-        nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Bypass -File "$INSTDIR\steamvr.ps1" -SteamPath "$STEAMDIR" -DriverPath "$TEMP\slimevr-openvr-driver-win64\slimevr"' $0
-        ${EnableX64FSRedirection}
+    # If powershell is present - rely on automatic detection.
+    ${DisableX64FSRedirection}
+    nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Bypass -File "$INSTDIR\steamvr.ps1" -SteamPath "$STEAMDIR" -DriverPath "$TEMP\slimevr-openvr-driver-win64\slimevr"' $0
+    ${EnableX64FSRedirection}
+    Pop $0
+    ${If} $0 != 0
+        nsDialogs::SelectFolderDialog "Specify a path to your SteamVR folder" "$STEAMDIR\steamapps\common\SteamVR"
         Pop $0
-        ${If} $0 != 0
-            Abort "Failed to copy SteamVR Driver."
-        ${EndIf}
-    ${Else}
-        CopyFiles /SILENT "$TEMP\slimevr-openvr-driver-win64\slimevr" "$STEAMVRDIR\drivers\slimevr"
-    ${Endif}
+        ${If} $0 == "error"
+            Abort "Failed to copy SlimeVR Driver."
+        ${Endif}
+        CopyFiles /SILENT "$TEMP\slimevr-openvr-driver-win64\slimevr" "$0\drivers\slimevr"
+    ${EndIf}
 SectionEnd
 
 Section "SlimeVR Feeder App" SEC_FEEDER_APP
@@ -492,7 +431,7 @@ Section "SlimeVR Feeder App" SEC_FEEDER_APP
     nsExec::ExecToLog '"$INSTDIR\Feeder-App\SlimeVR-Feeder-App.exe" --install'
 SectionEnd
 
-SectionGroup "USB drivers" SEC_USBDRIVERS
+SectionGroup /e "USB drivers" SEC_USBDRIVERS
 
     Section "CP210x driver" SEC_CP210X
         # CP210X drivers (NodeMCU v2)
@@ -575,7 +514,7 @@ Section "-" SEC_REGISTERAPP
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
                     "UninstallString" '"$INSTDIR\uninstall.exe"'
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
-                    "DisplayIcon" "$INSTDIR\run.ico"
+                    "DisplayIcon" "$INSTDIR\slimevr.exe"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
                     "HelpLink" "https://docs.slimevr.dev/"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
@@ -608,9 +547,33 @@ Function componentsPre
         SectionSetFlags ${SEC_JRE} ${SF_SELECTED}
         SectionSetFlags ${SEC_WEBVIEW} ${SF_SELECTED}
         SectionSetFlags ${SEC_USBDRIVERS} ${SF_SECGRP}
-        SectionSetFlags ${SEC_VRDRIVER} ${SF_SELECTED}
         SectionSetFlags ${SEC_SERVER} ${SF_SELECTED}
     ${EndIf}
+    ${If} $STEAMDIR == ""
+        MessageBox MB_OK $(DESC_STEAM_NOTFOUND)
+        SectionSetFlags ${SEC_VRDRIVER} ${SF_USELECTED}|${SF_RO}
+        SectionSetFlags ${SEC_FEEDER_APP} ${SF_USELECTED}|${SF_RO}
+    ${Else}
+        SectionSetFlags ${SEC_VRDRIVER} ${SF_SELECTED}
+        SectionSetFlags ${SEC_FEEDER_APP} ${SF_SELECTED}
+    ${EndIf}
+
+    # Detect WebView2
+    ${If} ${RunningX64}
+        ReadRegStr $0 HKLM "SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+        ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+    ${Else}
+        ReadRegStr $0 HKLM "SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+        ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+    ${EndIf}
+
+    ${If} $0 == ""
+    ${AndIf} $1 == ""
+        SectionSetFlags ${SEC_WEBVIEW} ${SF_SELECTED}|${SF_RO}
+    ${Else}
+        SectionSetFlags ${SEC_WEBVIEW} ${SF_USELECTED}|${SF_RO}
+    ${EndIf}
+
 FunctionEnd
 
 Section "-un.SlimeVR Server" un.SEC_SERVER
@@ -620,16 +583,19 @@ Section "-un.SlimeVR Server" un.SEC_SERVER
     Delete "$SMPROGRAMS\Uninstall SlimeVR Server.lnk"
     Delete "$SMPROGRAMS\SlimeVR Server.lnk"
     Delete "$DESKTOP\SlimeVR Server.lnk"
-
+    Delete "$INSTDIR\slimevr-ui.exe"
     Delete "$INSTDIR\run.bat"
     Delete "$INSTDIR\run.ico"
-    Delete "$INSTDIR\slimevr.jar"
+    # Ignore errors on the files above, they are optional to remove and may not even exist
+    ClearErrors
+    Delete "$INSTDIR\slimevr*"
     Delete "$INSTDIR\MagnetoLib.dll"
     Delete "$INSTDIR\log*"
     Delete "$INSTDIR\*.log"
     Delete "$INSTDIR\*.lck"
     Delete "$INSTDIR\vrconfig.yml"
     Delete "$INSTDIR\LICENSE*"
+    Delete "$INSTDIR\ThirdPartyNotices.txt"
 
     RMDir /r "$INSTDIR\Recordings"
     RMdir /r "$INSTDIR\jre"
@@ -686,6 +652,7 @@ LangString DESC_SEC_FEEDER_APP ${LANG_ENGLISH} "Installs SlimeVR Feeder App that
 LangString DESC_SEC_CP210X ${LANG_ENGLISH} "Installs CP210X USB driver that comes with the following boards: NodeMCU v2, Wemos D1 Mini."
 LangString DESC_SEC_CH340 ${LANG_ENGLISH} "Installs CH340 USB driver that comes with the following boards: NodeMCU v3, SlimeVR, Wemos D1 Mini."
 LangString DESC_SEC_CH9102x ${LANG_ENGLISH} "Installs CH9102x USB driver that comes with the following boards: NodeMCU v2.1."
+LangString DESC_STEAM_NOTFOUND ${LANG_ENGLISH} "No Steam installation detected. Steam and SteamVR are required to be installed and run at least once to install the SteamVR Driver."
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_SERVER} $(DESC_SEC_SERVER)
