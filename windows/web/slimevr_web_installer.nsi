@@ -101,6 +101,8 @@ Function cleanInstDir
     Delete "$INSTDIR\firewall*.bat"
     Delete "$INSTDIR\MagnetoLib.dll"
     Delete "$INSTDIR\steamvr.ps1"
+    Delete "$INSTDIR\allow_ch340_update.reg"
+    Delete "$INSTDIR\block_ch340_update.reg"
     Delete "$INSTDIR\log*"
     Delete "$INSTDIR\*.log"
     Delete "$INSTDIR\*.lck"
@@ -471,6 +473,13 @@ SectionGroup /e "USB drivers" SEC_USBDRIVERS
         ${Else}
             Abort "Failed to install CH340 driver. Error code: $0."
         ${Endif}
+
+        # Include regkeys to block CH340 driver updates for counterfeit CH340 chips
+        
+        SetOutPath $INSTDIR
+        File "allow_ch340_update.reg"
+        File "block_ch340_update.reg"
+
     SectionEnd
 
     Section /o "CH9102x driver" SEC_CH9102X
