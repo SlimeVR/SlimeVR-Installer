@@ -473,10 +473,12 @@ SectionGroup /e "USB drivers" SEC_USBDRIVERS
             Abort "Failed to install CH340 driver. Error code: $0."
         ${Endif}
 
-        # Include PS script to reinstall working CH340 driver for counterfeit chips and block future updates to driver
+        # Include PS script and driver files to help reinstall older version of the CH340 driver. Helpful for counterfeit chips that don't work on newer drivers.
 
         SetOutPath $INSTDIR
         File "fix_ch340.ps1"
+        SetOutPath "$INSTDIR\CH341SER"
+        File "CH341SER\*"
 
     SectionEnd
 
