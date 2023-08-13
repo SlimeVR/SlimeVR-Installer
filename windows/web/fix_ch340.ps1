@@ -6,6 +6,9 @@ $HardwareID = "USB\VID_1A86&PID_7523"
 $DenyDeviceIDs = @(
     "USB\VID_1A86&PID_7523",
     "USB\VID_1A86&PID_7523&REV_0254"
+
+$SlimeVRInstallDir = Get-ItemPropertyValue -Path 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR' -Name InstallLocation
+
 )
 function Wait-CH340Device {
     # Wait for CH340 to be connected to register driver
@@ -55,15 +58,15 @@ function Remove-CH340Driver {
 function Install-CH340Driver {
     # Installs older driver
 
-    # For some reason I don't have regkeys pointing to where SlimeVR is installer, so for now it will test default install directory for driver files
-    $DriverToInstallTestDir = Test-Path -Path "C:\Program Files (x86)\SlimeVR Server\CH341SER\CH341SER.INF" -PathType Leaf
+    $DriverToInstallDir = Join-Path $SlimeVRInstallDir "CH341SER"
+    $DriverToInstallDir = Join-Path $DriverToInstallDir "CH341SER.INF"
 
-    if (-Not $DriverToInstallTestDir) {
+    $TestIfDriverPathExists = Test-Path -Path $DriverToInstallDir -PathType Leaf
+
+    if (-Not $TestIfDriverPathExists) {
         Write-Host "Driver to install not found! Aborting...`n"
         Exit-Script
     }
-
-    $DriverToInstallDir = "C:\Program Files (x86)\SlimeVR Server\CH341SER\CH341SER.INF"
 
     pnputil /add-driver $DriverToInstallDir /install | Out-Null
 }
