@@ -1,30 +1,25 @@
-function FindCH340 {
-    # Find CH340 OEM driver name
+# AFAIK this is the only HWID that counterfeit CH340s use
+# Well, they have 2 HWIDs according to Windows, but only 1 is needed for detection
+$HardwareID = "USB\VID_1A86&PID_7523"
 
-    $driverList = pnputil /enum-drivers
-    $driverList = $driverList -split "`r`n"
-    
-    $previousLine = $null
-    foreach ($line in $driverList) {
-        if ($line -like "*ch341ser.inf*") {
-            if ($previousLine) {
-                $previousLine = $previousLine -replace 'Published Name:     ', ''
-                return $previousLine
-            } else {
-                return $null
-            }
-        }
-        $previousLine = $line
-    } 
-}
+# ! Currently it gets the driver from my own CDN! This might be a security problem.
+$DriverZipUrl = 'cdn.kouno.xyz/YZSvN1b5.zip'
+$DriverTempPath = Join-Path $env:temp "CH341Fix"
+$DriverZipPath = Join-Path $DriverTempPath "CH341SER.ZIP"
+$DriverInfPath = Join-Path $DriverTempPath "CH341SER.INF"
 
-function WaitForCH340 {
-    $HardwareID = "USB\VID_1A86&PID_7523"
+# Can be expanded if more fake CH340 HWIDs are found
+$DenyDeviceIDs = @(
+    "USB\VID_1A86&PID_7523",
+    "USB\VID_1A86&PID_7523&REV_0254"
+)
+function Wait-CH340Device {
+    # Wait for CH340 to be connected to register driver
     $DelaySeconds = 1
 
     do {
-        $device = Get-WmiObject Win32_PnPEntity | Where-Object { $_.PNPDeviceID -like "*$HardwareID*" }
-        if ($device) {
+        $DeviceFound = Get-WmiObject Win32_PnPEntity | Where-Object { $_.PNPDeviceID -like "*$HardwareID*" }
+        if ($DeviceFound) {
             return $true
         }
         Write-Host -NoNewLine "`rWaiting for CH340..."
@@ -32,17 +27,83 @@ function WaitForCH340 {
     } while ($true)
 }
 
-function CleanUp {
-    Remove-Item $env:temp\CH341 -Recurse -Force | Out-Null
+function Find-CH340Driver {
+    # Find CH340 OEM driver name
+    $DriverList = pnputil /enum-drivers
+    $DriverList = $DriverList -split "`r`n"
+    
+    $PreviousLine = $null
+    foreach ($Line in $DriverList) {
+        if ($Line -like "*ch341ser.inf*") {
+            if ($PreviousLine) {
+                return ($PreviousLine -replace 'Published Name:     ', '')
+            } else {
+                return $null
+            }
+        }
+        $PreviousLine = $Line
+    } 
 }
 
-# Self-elevate the script
-if (-Not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')) {
-    if ([int](Get-CimInstance -Class Win32_OperatingSystem | Select-Object -ExpandProperty BuildNumber) -ge 6000) {
-        $CommandLine = "-File `"" + $MyInvocation.MyCommand.Path + "`" " + $MyInvocation.UnboundArguments
-        Start-Process -FilePath PowerShell.exe -Verb Runas -ArgumentList $CommandLine
+function Remove-CH340Driver {
+    # Remove broken CH340 driver
+    $Driver = Find-CH340Driver
+    if ($null -eq $Driver) {
+        Write-Host "No CH340 driver found!`n"
+        Exit-Script
         Exit
+    } else {
+        pnputil /delete-driver $Driver /uninstall | Out-Null 
+
     }
+}
+
+function Request-CH340Driver {
+    # Downloads and extracts the known working driver to a temp directory
+    New-Item -ItemType Directory -Path $DriverTempPath -ErrorAction SilentlyContinue | Out-Null
+    Invoke-WebRequest -Uri $DriverZipUrl -OutFile $DriverZipPath | Out-Null
+    Expand-Archive -Path $DriverZipPath -DestinationPath $DriverTempPath -Force
+}
+
+function Install-CH340Driver {
+    # Installs newly downloaded driver
+    pnputil /add-driver $DriverInfPath /install | Out-Null
+}
+
+function Add-RegistryValues {
+    # Blocks any further device driver updates to the specified HWIDs
+    $RegistryPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeviceInstall\Restrictions"
+    New-Item -Path $RegistryPath -Force | Out-Null
+
+    $DenyDeviceIDsPath = Join-Path $RegistryPath "DenyDeviceIDs"
+    New-Item -Path $DenyDeviceIDsPath -Force | Out-Null
+    
+    Set-ItemProperty -Path $RegistryPath -Name "DenyDeviceIDs" -Value 1
+    Set-ItemProperty -Path $RegistryPath -Name "DenyDeviceIDsRetroactive" -Value 0
+
+    $DenyDeviceIDs | ForEach-Object {
+        $index = [array]::IndexOf($DenyDeviceIDs, $_) + 1
+        Set-ItemProperty -Path $DenyDeviceIDsPath -Name $index -Value $_
+    }
+}
+function Remove-TempFiles {
+    Remove-Item $DriverTempPath -Recurse -Force | Out-Null
+}
+
+function Exit-Script {
+    Write-Host "Press any key to exit..."
+    $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+    Exit
+}
+
+# * Main entry point
+
+# Elevate script if not already running as administrator
+# Doesn't seem to work as a function?
+if (-Not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')) {
+    $CommandLine = "-File `"" + $MyInvocation.MyCommand.Path + "`" " + $MyInvocation.UnboundArguments
+    Start-Process -FilePath PowerShell.exe -Verb Runas -ArgumentList $CommandLine
+    Exit
 }
 
 Clear-Host
@@ -55,67 +116,36 @@ Write-Host @"
 
                                     Plug in your CH340 and press any key to continue.
 
+                                
+
 "@
 
 $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
 Clear-Host
 
-if (WaitForCH340) {
-    Write-Host "CH340 found!"
-    Write-Host ""
-    Write-Host "Removing broken CH340 driver..."
+if (Wait-CH340Device) {
+    Write-Host "CH340 found!`n"
 
-    $driver = FindCH340
-    if ($null -eq $driver) {
-        Write-Host ""
-        Write-Host "No CH340 driver found."
-        Write-Host ""
-    } else {
-        pnputil /delete-driver $driver /uninstall | Out-Null 
-        Write-Host "OK."
-        Write-Host ""
-    }
+    Write-Host "Removing broken CH340 driver...`n"
+    Remove-CH340Driver
+    Write-Host "OK.`n"
 
-    # Downloads 2014 driver
-    # Probably not the safest to be hosting on my own CDN, can change
-    Write-Host "Downloading working CH340 driver..."
-    New-Item -ItemType Directory -Path $env:temp\CH341 -ErrorAction SilentlyContinue | Out-Null
-    Invoke-WebRequest -Uri 'cdn.kouno.xyz/YZSvN1b5.zip' -OutFile $env:temp\CH341\CH341SER.ZIP | Out-Null
-    Write-Host "OK."
-    Write-Host ""
+    Write-Host "Downloading and extracting working CH340 driver...`n"
+    Request-CH340Driver
+    Write-Host "OK.`n"
 
-    Write-Host "Extracting working CH340 driver..."
-    Expand-Archive -Path $env:temp\CH341\CH341SER.ZIP -DestinationPath $env:temp\CH341\ -Force
-    Write-Host "OK."
-    Write-Host ""
+    Write-Host "Installing working CH340 driver...`n"
+    Install-CH340Driver
+    Write-Host "OK.`n"
 
-    Write-Host "Installing working CH340 driver..."
-    pnputil /add-driver $env:temp\CH341\CH341SER.INF /install | Out-Null
-    Write-Host "OK."
-    Write-Host ""
+    Write-Host "Adding registry values to prevent driver updates...`n"
+    Add-RegistryValues
+    Write-Host "OK.`n"
 
-    Write-Host "Adding registry values to prevent driver updates..."
-    
-    $registryPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeviceInstall\Restrictions"
-    New-Item -Path $registryPath -Force | Out-Null
+    Write-Host "Cleaning up...`n"
+    Remove-TempFiles
+    Write-Host "OK.`n"
 
-    $denyDeviceIDsPath = "$registryPath\DenyDeviceIDs"
-    New-Item -Path $denyDeviceIDsPath -Force | Out-Null
-
-    Set-ItemProperty -Path $registryPath -Name "DenyDeviceIDs" -Value 1
-    Set-ItemProperty -Path $registryPath -Name "DenyDeviceIDsRetroactive" -Value 0
-    Set-ItemProperty -Path $denyDeviceIDsPath -Name "1" -Value "USB\VID_1A86&PID_7523"
-    Set-ItemProperty -Path $denyDeviceIDsPath -Name "2" -Value "USB\VID_1A86&PID_7523&REV_0254"
-
-    Write-Host "OK."
-    Write-Host ""
-
-    Write-Host "Cleaning up..."
-    CleanUp
-    Write-Host "OK."
-    Write-Host ""
+    Write-Host "Successfully fixed CH340 driver. Your CH340 should work now!`n"
+    Exit-Script
 }
-
-Write-Host "Success! Your CH340 should work now."
-Write-Host "Press any key to exit."
-$null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
