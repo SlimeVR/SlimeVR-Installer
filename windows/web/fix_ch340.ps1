@@ -114,6 +114,8 @@ Write-Host @"
 
         This script will attempt to fix driver issues that appear when using a counterfeit / fake CH340 UART chip.
 
+      This script will modify device drivers and system registry values. Only proceed if you're comfortable with that.
+
                                     Plug in your CH340 and press any key to continue.
 
                                 
