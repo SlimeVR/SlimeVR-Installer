@@ -28,7 +28,7 @@ InstallDir "$PROGRAMFILES\SlimeVR Server" ; $InstDir default value. Defaults to 
 ShowInstDetails show
 ShowUninstDetails show
 
-BrandingText "SlimeVR Installer 0.1.9"
+BrandingText "SlimeVR Installer 0.2.0"
 
 # Admin rights are required for:
 # 1. Removing Start Menu shortcut in Windows 7+
@@ -475,7 +475,7 @@ SectionGroup /e "USB drivers" SEC_USBDRIVERS
         ${Endif}
 
         # Include regkeys to block CH340 driver updates for counterfeit CH340 chips
-        
+
         SetOutPath $INSTDIR
         File "allow_ch340_update.reg"
         File "block_ch340_update.reg"
