@@ -2,12 +2,6 @@
 # Well, they have 2 HWIDs according to Windows, but only 1 is needed for detection
 $HardwareID = "USB\VID_1A86&PID_7523"
 
-# ! Currently it gets the driver from my own CDN! This might be a security problem.
-$DriverZipUrl = 'cdn.kouno.xyz/YZSvN1b5.zip'
-$DriverTempPath = Join-Path $env:temp "CH341Fix"
-$DriverZipPath = Join-Path $DriverTempPath "CH341SER.ZIP"
-$DriverInfPath = Join-Path $DriverTempPath "CH341SER.INF"
-
 # Can be expanded if more fake CH340 HWIDs are found
 $DenyDeviceIDs = @(
     "USB\VID_1A86&PID_7523",
@@ -49,7 +43,7 @@ function Remove-CH340Driver {
     # Remove broken CH340 driver
     $Driver = Find-CH340Driver
     if ($null -eq $Driver) {
-        Write-Host "No CH340 driver found!`n"
+        Write-Host "No CH340 driver found! Aborting...`n"
         Exit-Script
         Exit
     } else {
@@ -58,16 +52,20 @@ function Remove-CH340Driver {
     }
 }
 
-function Request-CH340Driver {
-    # Downloads and extracts the known working driver to a temp directory
-    New-Item -ItemType Directory -Path $DriverTempPath -ErrorAction SilentlyContinue | Out-Null
-    Invoke-WebRequest -Uri $DriverZipUrl -OutFile $DriverZipPath | Out-Null
-    Expand-Archive -Path $DriverZipPath -DestinationPath $DriverTempPath -Force
-}
-
 function Install-CH340Driver {
-    # Installs newly downloaded driver
-    pnputil /add-driver $DriverInfPath /install | Out-Null
+    # Installs older driver
+
+    # For some reason I don't have regkeys pointing to where SlimeVR is installer, so for now it will test default install directory for driver files
+    $DriverToInstallTestDir = Test-Path -Path "C:\Program Files (x86)\SlimeVR Server\CH341SER\CH341SER.INF" -PathType Leaf
+
+    if (-Not $DriverToInstallTestDir) {
+        Write-Host "Driver to install not found! Aborting...`n"
+        Exit-Script
+    }
+
+    $DriverToInstallDir = "C:\Program Files (x86)\SlimeVR Server\CH341SER\CH341SER.INF"
+
+    pnputil /add-driver $DriverToInstallDir /install | Out-Null
 }
 
 function Add-RegistryValues {
@@ -85,9 +83,6 @@ function Add-RegistryValues {
         $index = [array]::IndexOf($DenyDeviceIDs, $_) + 1
         Set-ItemProperty -Path $DenyDeviceIDsPath -Name $index -Value $_
     }
-}
-function Remove-TempFiles {
-    Remove-Item $DriverTempPath -Recurse -Force | Out-Null
 }
 
 function Exit-Script {
@@ -132,20 +127,12 @@ if (Wait-CH340Device) {
     Remove-CH340Driver
     Write-Host "OK.`n"
 
-    Write-Host "Downloading and extracting working CH340 driver...`n"
-    Request-CH340Driver
-    Write-Host "OK.`n"
-
     Write-Host "Installing working CH340 driver...`n"
     Install-CH340Driver
     Write-Host "OK.`n"
 
     Write-Host "Adding registry values to prevent driver updates...`n"
     Add-RegistryValues
-    Write-Host "OK.`n"
-
-    Write-Host "Cleaning up...`n"
-    Remove-TempFiles
     Write-Host "OK.`n"
 
     Write-Host "Successfully fixed CH340 driver. Your CH340 should work now!`n"
