@@ -4,6 +4,8 @@ Unicode True
 !include LogicLib.nsh	; For conditional operators
 !include nsDialogs.nsh  ; For custom pages
 !include FileFunc.nsh   ; For GetTime function
+!include "nsProcess.nsh"; For Check on SteamVR
+#!include WinMessages.nsh
 !include MUI2.nsh
 
 !define SF_USELECTED  0
@@ -12,6 +14,10 @@ Unicode True
 !define MUI_HEADERIMAGE_BITMAP "logo.bmp"
 !define MUI_HEADERIMAGE_BITMAP_STRETCH "NoStretchNoCrop"
 !define MUI_HEADERIMAGE_RIGHT
+
+Var /GLOBAL SteamVRprocessFound
+Var /GLOBAL SteamVRLabelID
+Var /GLOBAL SteamVRLabelTxt
 
 # Define name of installer
 Name "SlimeVR"
@@ -28,7 +34,7 @@ InstallDir "$PROGRAMFILES\SlimeVR Server" ; $InstDir default value. Defaults to 
 ShowInstDetails show
 ShowUninstDetails show
 
-BrandingText "SlimeVR Installer 0.1.9"
+BrandingText "SlimeVR Installer 0.2.0"
 
 # Admin rights are required for:
 # 1. Removing Start Menu shortcut in Windows 7+
@@ -58,6 +64,61 @@ Function .onInit
         ReadRegStr $0 HKLM SOFTWARE\Valve\Steam InstallPath
     ${EndIf}
     StrCpy $STEAMDIR $0
+FunctionEnd
+
+# check if one of the Processes is running to warn the user.
+# vrwebhelper.exe
+# vrserver.exe
+# vrmonitor.exe
+# vrdashboard.exe
+# vrcompositor.exe
+Function SteamVRTest
+    StrCpy $SteamVRprocessFound "NotFound"
+    Push "vrwebhelper.exe"
+    Call TestProcess
+    Push "vrserver.exe"
+    Call TestProcess
+    Push "vrmonitor.exe"
+    Call TestProcess
+    Push "vrdashboard.exe"
+    Call TestProcess
+    Push "vrcompositor.exe"
+    Call TestProcess
+#    MessageBox MB_OK "SteamVRTest Result $SteamVRprocessFound"
+FunctionEnd
+
+Function TestProcess
+    Var /GLOBAL TestProcessReturn
+    Pop $0 
+    ${nsProcess::FindProcess} $0 $TestProcessReturn
+    ${if} $TestProcessReturn = 0
+        StrCpy $SteamVRprocessFound "Found"
+    ${elseif} $TestProcessReturn != 603
+        MessageBox MB_OK "An error happend while trying for look for $0 nsProcess::FindProcess Returns $TestProcessReturn"
+        StrCpy $TestProcessReturn "Error"
+    ${EndIf}
+FunctionEnd
+
+Function NextButtonDisable
+    GetDlgItem $0 $hwndparent 1 ; 1 is the ID of the Next button
+    EnableWindow $0 0
+FunctionEnd
+
+Function NextButtonEnable
+    GetDlgItem $0 $hwndparent 1 ; 1 is the ID of the Next button
+    EnableWindow $0 1
+FunctionEnd
+
+Function UpdateLabelTimer
+    Call SteamVRTest
+    ${if} $SteamVRprocessFound == "Found"
+        Call NextButtonDisable
+        StrCpy $SteamVRLabelTxt "SteamVR is running! Please close SteamVR."
+    ${elseif} $SteamVRprocessFound == "NotFound"
+        Call NextButtonEnable
+        StrCpy $SteamVRLabelTxt ""
+    ${endif}
+    ${NSD_SetText} $SteamVRLabelID $SteamVRLabelTxt
 FunctionEnd
 
 # Detect Steam installation and just write path that we need to remove during uninstall (if present)
@@ -139,6 +200,7 @@ LangString START_PAGE_TITLE ${LANG_ENGLISH} "Welcome"
 LangString START_PAGE_SUBTITLE ${LANG_ENGLISH} "Welcome to SlimeVR Setup!"
 
 Function startPage
+    Call UpdateLabelTimer
     !insertmacro MUI_HEADER_TEXT $(START_PAGE_TITLE) $(START_PAGE_SUBTITLE)
     nsDialogs::Create 1018
     Pop $0
@@ -169,20 +231,26 @@ Function startPage
         Pop $0
     ${EndIf}
 
+    ${NSD_CreateLabel} 0 90u 100% 10u '$SteamVRLabelTxt'
+    Pop $SteamVRLabelID
+    GetFunctionAddress $0 UpdateLabelTimer
+    nsDialogs::CreateTimer $0 2000 ; Set the timer interval to 1000 milliseconds (1 second)
+
     nsDialogs::Show
 
 FunctionEnd
 
 Function startPageLeave
+    GetFunctionAddress $0 UpdateLabelTimer
+    nsDialogs::KillTimer $0
+    ${NSD_GetState} $UPDATE $0
+    ${NSD_GetState} $REPAIR $1
 
-  ${NSD_GetState} $UPDATE $0
-  ${NSD_GetState} $REPAIR $1
-
-  ${If} $0 = 1
-    StrCpy $SELECTED_INSTALLER_ACTION "update"
-  ${ElseIf} $1 = 1
-    StrCpy $SELECTED_INSTALLER_ACTION "repair"
-  ${EndIf}
+    ${If} $0 = 1
+        StrCpy $SELECTED_INSTALLER_ACTION "update"
+    ${ElseIf} $1 = 1
+        StrCpy $SELECTED_INSTALLER_ACTION "repair"
+    ${EndIf}
 
 FunctionEnd
 
