@@ -94,7 +94,8 @@ Function TestProcess
     ${if} $TestProcessReturn = 0
         StrCpy $SteamVRprocessFound "Found"
     ${elseif} $TestProcessReturn != 603
-        MessageBox MB_OK "An error happend while trying for look for $0 nsProcess::FindProcess Returns $TestProcessReturn"
+        MessageBox MB_OK "$(DESC_PROCESS_ERROR) $TestProcessReturn"
+        # An error happend while trying for look for $0 nsProcess::FindProcess Returns $TestProcessReturn
         StrCpy $TestProcessReturn "Error"
     ${EndIf}
 FunctionEnd
@@ -113,7 +114,7 @@ Function UpdateLabelTimer
     Call SteamVRTest
     ${if} $SteamVRprocessFound == "Found"
         Call NextButtonDisable
-        StrCpy $SteamVRLabelTxt "SteamVR is running! Please close SteamVR."
+        StrCpy $SteamVRLabelTxt $(DESC_STEAMVR_RUNNING)
     ${elseif} $SteamVRprocessFound == "NotFound"
         Call NextButtonEnable
         StrCpy $SteamVRLabelTxt ""
@@ -721,6 +722,8 @@ LangString DESC_SEC_CP210X ${LANG_ENGLISH} "Installs CP210X USB driver that come
 LangString DESC_SEC_CH340 ${LANG_ENGLISH} "Installs CH340 USB driver that comes with the following boards: NodeMCU v3, SlimeVR, Wemos D1 Mini."
 LangString DESC_SEC_CH9102x ${LANG_ENGLISH} "Installs CH9102x USB driver that comes with the following boards: NodeMCU v2.1."
 LangString DESC_STEAM_NOTFOUND ${LANG_ENGLISH} "No Steam installation detected. Steam and SteamVR are required to be installed and run at least once to install the SteamVR Driver."
+LangString DESC_STEAMVR_RUNNING ${LANG_ENGLISH} "SteamVR is running! Please close SteamVR."
+LangString DESC_PROCESS_ERROR ${LANG_ENGLISH} "An error happend while trying for look for $0 nsProcess::FindProcess Returns "
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_SERVER} $(DESC_SEC_SERVER)
