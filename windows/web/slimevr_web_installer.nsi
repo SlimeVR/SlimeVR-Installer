@@ -4,7 +4,7 @@ Unicode True
 !include LogicLib.nsh	; For conditional operators
 !include nsDialogs.nsh  ; For custom pages
 !include FileFunc.nsh   ; For GetTime function
-!include "nsProcess.nsh"; For Check on SteamVR
+!include nsProcess.nsh  ; For Check on SteamVR
 #!include WinMessages.nsh
 !include MUI2.nsh
 
