@@ -435,6 +435,12 @@ Section "Java JRE" SEC_JRE
     ${EndIf}
     DetailPrint "Downloaded!"
 
+    # Make sure to delete all files on a update from jre, so if there is a new version no old files are left.   
+    ${If} $SELECTED_INSTALLER_ACTION == "update"
+        DetailPrint "Removing Java JRE 17..."
+        RMdir /r "$INSTDIR\jre"
+    ${EndIf}
+
     DetailPrint "Unzipping Java JRE 17 to installation folder...."
     nsisunz::Unzip "$TEMP\$DownloadedJreFile.zip" "$TEMP\$DownloadedJreFile\"
     Pop $0
