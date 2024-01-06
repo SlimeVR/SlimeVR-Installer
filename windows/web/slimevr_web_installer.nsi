@@ -628,16 +628,20 @@ Function componentsPre
     ${EndIf}
 
     # Detect WebView2
+    # https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution#detect-if-a-suitable-webview2-runtime-is-already-installed
+    # Trying to solve #41 Installer doesn't always install WebView2
+    # Ignoring only user installed WebView2 it seems to make problems
     ${If} ${RunningX64}
         ReadRegStr $0 HKLM "SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
-        ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+#        ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
     ${Else}
         ReadRegStr $0 HKLM "SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
-        ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+#        ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
     ${EndIf}
 
-    ${If} $0 == ""
-    ${AndIf} $1 == ""
+    ${If} ${Errors}
+    ${OrIf} $0 == ""
+    ${OrIf} $0 == "0.0.0.0"
         SectionSetFlags ${SEC_WEBVIEW} ${SF_SELECTED}|${SF_RO}
     ${Else}
         SectionSetFlags ${SEC_WEBVIEW} ${SF_USELECTED}|${SF_RO}
