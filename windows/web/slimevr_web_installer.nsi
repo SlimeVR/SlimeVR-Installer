@@ -7,6 +7,7 @@ Unicode True
 !include .\plugins\NsProcess\NsProcess.nsh ; For Check on SteamVR
 #!include WinMessages.nsh
 !include MUI2.nsh
+!include .\steamdetect.nsh
 
 !define SF_USELECTED  0
 !define MUI_ICON "run.ico"
@@ -15,9 +16,10 @@ Unicode True
 !define MUI_HEADERIMAGE_BITMAP_STRETCH "NoStretchNoCrop"
 !define MUI_HEADERIMAGE_RIGHT
 
-Var /GLOBAL SteamVRprocessFound
+Var /GLOBAL SteamVRResult
 Var /GLOBAL SteamVRLabelID
 Var /GLOBAL SteamVRLabelTxt
+Var /GLOBAL TestProcessReturn
 
 # Define name of installer
 Name "SlimeVR"
@@ -66,61 +68,8 @@ Function .onInit
     StrCpy $STEAMDIR $0
 FunctionEnd
 
-# check if one of the Processes is running to warn the user.
-# vrwebhelper.exe
-# vrserver.exe
-# vrmonitor.exe
-# vrdashboard.exe
-# vrcompositor.exe
-Function SteamVRTest
-    StrCpy $SteamVRprocessFound "NotFound"
-    Push "vrwebhelper.exe"
-    Call TestProcess
-    Push "vrserver.exe"
-    Call TestProcess
-    Push "vrmonitor.exe"
-    Call TestProcess
-    Push "vrdashboard.exe"
-    Call TestProcess
-    Push "vrcompositor.exe"
-    Call TestProcess
-#    MessageBox MB_OK "SteamVRTest Result $SteamVRprocessFound"
-FunctionEnd
-
-Function TestProcess
-    Var /GLOBAL TestProcessReturn
-    Pop $0 
-    ${nsProcess::FindProcess} $0 $TestProcessReturn
-    ${if} $TestProcessReturn = 0
-        StrCpy $SteamVRprocessFound "Found"
-    ${elseif} $TestProcessReturn != 603
-        MessageBox MB_OK "$(DESC_PROCESS_ERROR) $TestProcessReturn"
-        # An error happend while trying for look for $0 nsProcess::FindProcess Returns $TestProcessReturn
-        StrCpy $TestProcessReturn "Error"
-    ${EndIf}
-FunctionEnd
-
-Function NextButtonDisable
-    GetDlgItem $0 $hwndparent 1 ; 1 is the ID of the Next button
-    EnableWindow $0 0
-FunctionEnd
-
-Function NextButtonEnable
-    GetDlgItem $0 $hwndparent 1 ; 1 is the ID of the Next button
-    EnableWindow $0 1
-FunctionEnd
-
-Function UpdateLabelTimer
-    Call SteamVRTest
-    ${if} $SteamVRprocessFound == "Found"
-        Call NextButtonDisable
-        StrCpy $SteamVRLabelTxt $(DESC_STEAMVR_RUNNING)
-    ${elseif} $SteamVRprocessFound == "NotFound"
-        Call NextButtonEnable
-        StrCpy $SteamVRLabelTxt ""
-    ${endif}
-    ${NSD_SetText} $SteamVRLabelID $SteamVRLabelTxt
-FunctionEnd
+!insertmacro SteamProcessCheck "un." "SteamVRResult"
+!insertmacro SteamProcessCheck "" "SteamVRResult"
 
 # Detect Steam installation and just write path that we need to remove during uninstall (if present)
 Function un.onInit
@@ -192,7 +141,10 @@ Page Custom startPage startPageLeave
 
 Page Custom endPage endPageLeave
 
-!insertmacro MUI_UNPAGE_CONFIRM
+
+# Set MUI_UNCONFIMPAGE to get the translations
+!insertmacro MUI_SET MUI_UNCONFIRMPAGE ""
+UninstPage custom un.startPageConfirm un.endPageunConfirm
 !insertmacro MUI_UNPAGE_INSTFILES
 
 !insertmacro MUI_LANGUAGE "English"
@@ -366,6 +318,43 @@ Function DumpLog
     Pop $1
     Pop $0
     Exch $5
+FunctionEnd
+
+# Uninstall Confirm Page Clone to add some Labels
+Function un.startPageConfirm
+    nsDialogs::Create 1018
+    Pop $0
+    ${If} $0 == error
+      Abort
+    ${EndIf}
+    
+    !insertmacro MUI_HEADER_TEXT $(MUI_UNTEXT_CONFIRM_TITLE) $(MUI_UNTEXT_CONFIRM_SUBTITLE)
+
+    ; Uninstalling Text 
+    ${NSD_CreateLabel} 0 0 450 30 "$(^UninstallingText)"
+
+    ; Uninstalling Path Text
+    ${NSD_CreateLabel} 0 68 98 20 "$(^UninstallingSubText)"
+
+    ; Uninstalling Path
+    ${NSD_CreateText} 98 65 350 20 "$INSTDIR"
+    Pop $0
+    SendMessage $0 ${EM_SETREADONLY} 1 0
+
+    ; Create the SteamVR Warning Label
+    ${NSD_CreateLabel} 0 110u 100% 10u '$SteamVRLabelTxt'
+    Pop $SteamVRLabelID
+
+    Call un.UpdateLabelTimer
+    GetFunctionAddress $0 un.UpdateLabelTimer
+    nsDialogs::CreateTimer /NOUNLOAD $0 2000 ; Set the timer interval to 2000 milliseconds (2 second)
+
+    nsDialogs::Show
+FunctionEnd
+
+Function un.endPageunConfirm
+    GetFunctionAddress $0 un.UpdateLabelTimer
+    nsDialogs::KillTimer $0
 FunctionEnd
 
 Section "SlimeVR Server" SEC_SERVER
@@ -639,15 +628,28 @@ Function componentsPre
     # Ignoring only user installed WebView2 it seems to make problems
     ${If} ${RunningX64}
         ReadRegStr $0 HKLM "SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
-#        ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+        ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
     ${Else}
         ReadRegStr $0 HKLM "SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
-#        ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
+        ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
     ${EndIf}
 
-    ${If} ${Errors}
-    ${OrIf} $0 == ""
+    ${If} $0 == ""
     ${OrIf} $0 == "0.0.0.0"
+        StrCpy $0 ""
+    ${Else}
+        StrCpy $0 "1"
+    ${EndIf}
+
+    ${If} $1 == ""
+    ${OrIf} $1 == "0.0.0.0"
+        StrCpy $1 ""
+    ${Else}
+        StrCpy $1 "1"
+    ${EndIf}
+
+    ${If} $0 == ""
+    ${AndIf} $1 == ""
         SectionSetFlags ${SEC_WEBVIEW} ${SF_SELECTED}|${SF_RO}
     ${Else}
         SectionSetFlags ${SEC_WEBVIEW} ${SF_USELECTED}|${SF_RO}
