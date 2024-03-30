@@ -20,6 +20,9 @@ Var /GLOBAL SteamVRResult
 Var /GLOBAL SteamVRLabelID
 Var /GLOBAL SteamVRLabelTxt
 Var /GLOBAL TestProcessReturn
+Var /GLOBAL SlimeVRRunning
+Var /GLOBAL SlimeVRLabelID
+Var /GLOBAL SlimeVRLabelTxt
 
 # Define name of installer
 Name "SlimeVR"
@@ -68,8 +71,8 @@ Function .onInit
     StrCpy $STEAMDIR $0
 FunctionEnd
 
-!insertmacro SteamProcessCheck "un." "SteamVRResult"
-!insertmacro SteamProcessCheck "" "SteamVRResult"
+!insertmacro ProcessCheck "un." "SteamVRResult"
+!insertmacro ProcessCheck "" "SteamVRResult"
 
 # Detect Steam installation and just write path that we need to remove during uninstall (if present)
 Function un.onInit
@@ -186,6 +189,8 @@ Function startPage
 
     ${NSD_CreateLabel} 0 90u 100% 10u '$SteamVRLabelTxt'
     Pop $SteamVRLabelID
+    ${NSD_CreateLabel} 0 100u 100% 10u '$SlimeVRLabelTxt'
+    Pop $SlimeVRLabelID
     GetFunctionAddress $0 UpdateLabelTimer
     nsDialogs::CreateTimer $0 2000 ; Set the timer interval to 1000 milliseconds (1 second)
 
@@ -342,8 +347,10 @@ Function un.startPageConfirm
     SendMessage $0 ${EM_SETREADONLY} 1 0
 
     ; Create the SteamVR Warning Label
-    ${NSD_CreateLabel} 0 110u 100% 10u '$SteamVRLabelTxt'
+    ${NSD_CreateLabel} 0 90u 100% 10u '$SteamVRLabelTxt'
     Pop $SteamVRLabelID
+    ${NSD_CreateLabel} 0 100u 100% 10u '$SlimeVRLabelTxt'
+    Pop $SlimeVRLabelID
 
     Call un.UpdateLabelTimer
     GetFunctionAddress $0 un.UpdateLabelTimer
@@ -735,6 +742,7 @@ LangString DESC_SEC_CH340 ${LANG_ENGLISH} "Installs CH340 USB driver that comes 
 LangString DESC_SEC_CH9102x ${LANG_ENGLISH} "Installs CH9102x USB driver that comes with the following boards: NodeMCU v2.1."
 LangString DESC_STEAM_NOTFOUND ${LANG_ENGLISH} "No Steam installation detected. Steam and SteamVR are required to be installed and run at least once to install the SteamVR Driver."
 LangString DESC_STEAMVR_RUNNING ${LANG_ENGLISH} "SteamVR is running! Please close SteamVR."
+LangString DESC_SLIMEVR_RUNNING ${LANG_ENGLISH} "SlimeVR is running! Please close SlimeVR."
 LangString DESC_PROCESS_ERROR ${LANG_ENGLISH} "An error happend while trying for look for $0 nsProcess::FindProcess Returns "
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN

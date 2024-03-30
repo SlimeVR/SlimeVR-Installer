@@ -4,7 +4,7 @@
 # vrmonitor.exe
 # vrdashboard.exe
 # vrcompositor.exe
-!macro SteamProcessCheck un GLOBVARRETURN
+!macro ProcessCheck un GLOBVARRETURN
 
 Function ${un}SteamVRTest
     StrCpy $${GLOBVARRETURN} "NotFound" 
@@ -46,16 +46,39 @@ FunctionEnd
 
 
 Function ${un}UpdateLabelTimer
+    ; Test if SlimeVR is Running
+    StrCpy $${GLOBVARRETURN} "NotFound" 
+    Push "slimevr.exe"
+    Call ${un}TestProcess
+    StrCpy $SlimeVRRunning $${GLOBVARRETURN}
+    ; Test if SteamVR is Running
     Call ${un}SteamVRTest
-    ${if} $${GLOBVARRETURN} == "Found"
-        Call ${un}NextButtonDisable
+
+    ; Set the Warning lable for SteamVR
+    ${If} $${GLOBVARRETURN} == "Found"
         StrCpy $SteamVRLabelTxt $(DESC_STEAMVR_RUNNING)
-    ${elseif} $${GLOBVARRETURN} == "NotFound"
-        Call ${un}NextButtonEnable
+    ${ElseIf} $${GLOBVARRETURN} == "NotFound"
         StrCpy $SteamVRLabelTxt ""
-    ${endif}
+    ${EndIf}
+
+    ; Set the Warning lable for SlimeVR
+    ${If} $SlimeVRRunning == "Found"
+        StrCpy $SlimeVRLabelTxt $(DESC_SLIMEVR_RUNNING)
+    ${ElseIf} $SlimeVRRunning == "NotFound"
+        StrCpy $SlimeVRLabelTxt ""
+    ${EndIf}
+
+    ; Logic for Enable Disable the Buttons
+    ${If} $${GLOBVARRETURN} == "Found"
+    ${OrIf} $SlimeVRRunning == "Found"
+        Call ${un}NextButtonDisable
+    ${ElseIf} $${GLOBVARRETURN} == "NotFound"
+    ${AndIf} $SlimeVRRunning == "NotFound"
+        Call ${un}NextButtonEnable
+    ${EndIf}
 #    MessageBox MB_OK "SteamVRTest Result $SteamVRLabelTxt"
     ${NSD_SetText} $SteamVRLabelID $SteamVRLabelTxt
+    ${NSD_SetText} $SlimeVRLabelID $SlimeVRLabelTxt
 FunctionEnd
 
 !macroend
