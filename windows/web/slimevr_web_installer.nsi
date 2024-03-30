@@ -423,8 +423,8 @@ Section "Java JRE" SEC_JRE
     
     Var /GLOBAL DownloadedJreFile
     DetailPrint "Downloading Java JRE 17..."
-    NScurl::http GET "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.4.1%2B1/OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip" "$TEMP\OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip" /CANCEL /RESUME /END
-    StrCpy $DownloadedJreFile "OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1"
+    NScurl::http GET "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jre_x64_windows_hotspot_17.0.10_7.zip" "$TEMP\OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip" /CANCEL /RESUME /END
+    StrCpy $DownloadedJreFile "OpenJDK17U-jre_x64_windows_hotspot_17.0.10_7"
     Pop $0 ; Status text ("OK" for success)
     ${If} $0 != "OK"
         Abort "Failed to download Java JRE 17. Reason: $0."
@@ -441,7 +441,7 @@ Section "Java JRE" SEC_JRE
     nsisunz::Unzip "$TEMP\$DownloadedJreFile.zip" "$TEMP\$DownloadedJreFile\"
     Pop $0
     DetailPrint "Unzipping finished with $0."
-    CopyFiles /SILENT "$TEMP\$DownloadedJreFile\jdk-17.0.4.1+1-jre\*" "$INSTDIR\jre"
+    CopyFiles /SILENT "$TEMP\$DownloadedJreFile\jdk-17.0.10+7-jre\*" "$INSTDIR\jre"
 SectionEnd
 
 Section "SteamVR Driver" SEC_VRDRIVER
