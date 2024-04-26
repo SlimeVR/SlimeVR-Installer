@@ -4,7 +4,11 @@ Unicode True
 !include LogicLib.nsh	; For conditional operators
 !include nsDialogs.nsh  ; For custom pages
 !include FileFunc.nsh   ; For GetTime function
+!include .\plugins\NsProcess\NsProcess.nsh ; For Check on SteamVR
+#!include WinMessages.nsh
+!include TextFunc.nsh   ; For ConfigRead
 !include MUI2.nsh
+!include .\steamdetect.nsh
 
 !define SF_USELECTED  0
 !define MUI_ICON "run.ico"
@@ -12,6 +16,21 @@ Unicode True
 !define MUI_HEADERIMAGE_BITMAP "logo.bmp"
 !define MUI_HEADERIMAGE_BITMAP_STRETCH "NoStretchNoCrop"
 !define MUI_HEADERIMAGE_RIGHT
+!define SLIMETEMP "$TEMP\SlimeVRInstaller"
+
+# Define the Java Version Strings and to Check (JRE\relase -> JAVA_RUNTIME_VERSION=)
+!define JREVersion "17.0.10+7"
+!define JREDownloadURL "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jre_x64_windows_hotspot_17.0.10_7.zip"
+!define JREDownloadedFileZip "OpenJDK17U-jre_x64_windows_hotspot_17.0.10_7.zip"
+Var JREneedInstall
+
+Var /GLOBAL SteamVRResult
+Var /GLOBAL SteamVRLabelID
+Var /GLOBAL SteamVRLabelTxt
+Var /GLOBAL TestProcessReturn
+Var /GLOBAL SlimeVRRunning
+Var /GLOBAL SlimeVRLabelID
+Var /GLOBAL SlimeVRLabelTxt
 
 # Define name of installer
 Name "SlimeVR"
@@ -28,7 +47,7 @@ InstallDir "$PROGRAMFILES\SlimeVR Server" ; $InstDir default value. Defaults to 
 ShowInstDetails show
 ShowUninstDetails show
 
-BrandingText "SlimeVR Installer 0.1.9"
+BrandingText "SlimeVR Installer 0.2.0"
 
 # Admin rights are required for:
 # 1. Removing Start Menu shortcut in Windows 7+
@@ -60,6 +79,9 @@ Function .onInit
     StrCpy $STEAMDIR $0
 FunctionEnd
 
+!insertmacro ProcessCheck "un." "SteamVRResult"
+!insertmacro ProcessCheck "" "SteamVRResult"
+
 # Detect Steam installation and just write path that we need to remove during uninstall (if present)
 Function un.onInit
     ${If} ${RunningX64}
@@ -72,15 +94,7 @@ FunctionEnd
 
 # Clean up on exit
 Function cleanTemp
-    Delete "$TEMP\slimevr-openvr-driver-win64.zip"
-    Delete "$TEMP\SlimeVR-win64.zip"
-    Delete "$TEMP\OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip"
-    Delete "$TEMP\SlimeVR-Feeder-App-win64.zip"
-    RMDir /r "$TEMP\slimevr-openvr-driver-win64"
-    RMDir /r "$TEMP\SlimeVR"
-    RMDir /r "$TEMP\OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1"
-    RMDir /r "$TEMP\slimevr_usb_drivers_inst"
-    RMDir /r "$TEMP\SlimeVR-Feeder-App-win64"
+    RMDir /r "${SLIMETEMP}"
 FunctionEnd
 
 Function .onInstFailed
@@ -130,7 +144,10 @@ Page Custom startPage startPageLeave
 
 Page Custom endPage endPageLeave
 
-!insertmacro MUI_UNPAGE_CONFIRM
+
+# Set MUI_UNCONFIMPAGE to get the translations
+!insertmacro MUI_SET MUI_UNCONFIRMPAGE ""
+UninstPage custom un.startPageConfirm un.endPageunConfirm
 !insertmacro MUI_UNPAGE_INSTFILES
 
 !insertmacro MUI_LANGUAGE "English"
@@ -139,6 +156,7 @@ LangString START_PAGE_TITLE ${LANG_ENGLISH} "Welcome"
 LangString START_PAGE_SUBTITLE ${LANG_ENGLISH} "Welcome to SlimeVR Setup!"
 
 Function startPage
+    Call UpdateLabelTimer
     !insertmacro MUI_HEADER_TEXT $(START_PAGE_TITLE) $(START_PAGE_SUBTITLE)
     nsDialogs::Create 1018
     Pop $0
@@ -169,20 +187,28 @@ Function startPage
         Pop $0
     ${EndIf}
 
+    ${NSD_CreateLabel} 0 90u 100% 10u '$SteamVRLabelTxt'
+    Pop $SteamVRLabelID
+    ${NSD_CreateLabel} 0 100u 100% 10u '$SlimeVRLabelTxt'
+    Pop $SlimeVRLabelID
+    GetFunctionAddress $0 UpdateLabelTimer
+    nsDialogs::CreateTimer $0 2000 ; Set the timer interval to 1000 milliseconds (1 second)
+
     nsDialogs::Show
 
 FunctionEnd
 
 Function startPageLeave
+    GetFunctionAddress $0 UpdateLabelTimer
+    nsDialogs::KillTimer $0
+    ${NSD_GetState} $UPDATE $0
+    ${NSD_GetState} $REPAIR $1
 
-  ${NSD_GetState} $UPDATE $0
-  ${NSD_GetState} $REPAIR $1
-
-  ${If} $0 = 1
-    StrCpy $SELECTED_INSTALLER_ACTION "update"
-  ${ElseIf} $1 = 1
-    StrCpy $SELECTED_INSTALLER_ACTION "repair"
-  ${EndIf}
+    ${If} $0 = 1
+        StrCpy $SELECTED_INSTALLER_ACTION "update"
+    ${ElseIf} $1 = 1
+        StrCpy $SELECTED_INSTALLER_ACTION "repair"
+    ${EndIf}
 
 FunctionEnd
 
@@ -255,6 +281,23 @@ Function installerActionPre
     ${EndIf}
 FunctionEnd
 
+# Provides a easy function to determit if the JRE is the desired Version or not
+Function JREdetect
+    IfFileExists "$INSTDIR\jre\release" 0 SEC_JRE_JAVAVERSIONELSE
+        ${ConfigRead} "$INSTDIR\jre\release" "JAVA_RUNTIME_VERSION=" $R0
+;        DetailPrint "Java JRE: $INSTDIR\jre\release JAVA_RUNTIME_VERSION=$R0"
+        ${If} $R0 == "$\"${JREVersion}$\""
+            StrCpy $JREneedInstall "False"
+        ${Else}
+            StrCpy $JREneedInstall "True"
+        ${EndIf}
+        Goto SEC_JRE_JAVAVERSIONDONE
+    SEC_JRE_JAVAVERSIONELSE:
+        StrCpy $JREneedInstall "True"
+;        DetailPrint "Java JRE: $INSTDIR\jre\release File Not Found"
+    SEC_JRE_JAVAVERSIONDONE:
+FunctionEnd
+
 # GetTime function macro to get datetime
 !insertmacro GetTime
 
@@ -299,20 +342,59 @@ Function DumpLog
     Exch $5
 FunctionEnd
 
+# Uninstall Confirm Page Clone to add some Labels
+Function un.startPageConfirm
+    nsDialogs::Create 1018
+    Pop $0
+    ${If} $0 == error
+      Abort
+    ${EndIf}
+    
+    !insertmacro MUI_HEADER_TEXT $(MUI_UNTEXT_CONFIRM_TITLE) $(MUI_UNTEXT_CONFIRM_SUBTITLE)
+
+    ; Uninstalling Text 
+    ${NSD_CreateLabel} 0 0 450 30 "$(^UninstallingText)"
+
+    ; Uninstalling Path Text
+    ${NSD_CreateLabel} 0 68 98 20 "$(^UninstallingSubText)"
+
+    ; Uninstalling Path
+    ${NSD_CreateText} 98 65 350 20 "$INSTDIR"
+    Pop $0
+    SendMessage $0 ${EM_SETREADONLY} 1 0
+
+    ; Create the SteamVR Warning Label
+    ${NSD_CreateLabel} 0 90u 100% 10u '$SteamVRLabelTxt'
+    Pop $SteamVRLabelID
+    ${NSD_CreateLabel} 0 100u 100% 10u '$SlimeVRLabelTxt'
+    Pop $SlimeVRLabelID
+
+    Call un.UpdateLabelTimer
+    GetFunctionAddress $0 un.UpdateLabelTimer
+    nsDialogs::CreateTimer /NOUNLOAD $0 2000 ; Set the timer interval to 2000 milliseconds (2 second)
+
+    nsDialogs::Show
+FunctionEnd
+
+Function un.endPageunConfirm
+    GetFunctionAddress $0 un.UpdateLabelTimer
+    nsDialogs::KillTimer $0
+FunctionEnd
+
 Section "SlimeVR Server" SEC_SERVER
     SectionIn RO
 
     SetOutPath $INSTDIR
 
     DetailPrint "Downloading SlimeVR Server..."
-    NScurl::http GET "https://github.com/SlimeVR/SlimeVR-Server/releases/latest/download/SlimeVR-win64.zip" "$TEMP\SlimeVR-win64.zip" /CANCEL /RESUME /END
+    NScurl::http GET "https://github.com/SlimeVR/SlimeVR-Server/releases/latest/download/SlimeVR-win64.zip" "${SLIMETEMP}\SlimeVR-win64.zip" /CANCEL /RESUME /END
     Pop $0 ; Status text ("OK" for success)
     ${If} $0 != "OK"
         Abort "Failed to download SlimeVR Server. Reason: $0."
     ${EndIf}
     DetailPrint "Downloaded!"
 
-    nsisunz::Unzip "$TEMP\SlimeVR-win64.zip" "$TEMP\SlimeVR\"
+    nsisunz::Unzip "${SLIMETEMP}\SlimeVR-win64.zip" "${SLIMETEMP}\SlimeVR\"
     Pop $0
     DetailPrint "Unzipping finished with $0."
 
@@ -321,7 +403,7 @@ Section "SlimeVR Server" SEC_SERVER
     ${EndIf}
 
     DetailPrint "Copying SlimeVR Server to installation folder..."
-    CopyFiles /SILENT "$TEMP\SlimeVR\SlimeVR\*" $INSTDIR
+    CopyFiles /SILENT "${SLIMETEMP}\SlimeVR\SlimeVR\*" $INSTDIR
 
     IfFileExists "$INSTDIR\slimevr-ui.exe" found not_found
     found:
@@ -341,10 +423,10 @@ Section "Webview2" SEC_WEBVIEW
 
     # Read Only protects it from Installing when it is not needed
     DetailPrint "Downloading webview2!"
-    NScurl::http GET "https://go.microsoft.com/fwlink/p/?LinkId=2124703" "$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.exe" /CANCEL /RESUME /END
+    NScurl::http GET "https://go.microsoft.com/fwlink/p/?LinkId=2124703" "${SLIMETEMP}\MicrosoftEdgeWebView2RuntimeInstaller.exe" /CANCEL /RESUME /END
 
     DetailPrint "Installing webview2!"
-    nsExec::ExecToLog '"$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.exe" /silent /install' $0
+    nsExec::ExecToLog '"${SLIMETEMP}\MicrosoftEdgeWebView2RuntimeInstaller.exe" /silent /install' $0
     Pop $0
     DetailPrint "Installing finished with $0."
     ${If} $0 != 0
@@ -356,28 +438,42 @@ SectionEnd
 Section "Java JRE" SEC_JRE
     SectionIn RO
     
-    Var /GLOBAL DownloadedJreFile
-    DetailPrint "Downloading Java JRE 17..."
-    NScurl::http GET "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.4.1%2B1/OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip" "$TEMP\OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1.zip" /CANCEL /RESUME /END
-    StrCpy $DownloadedJreFile "OpenJDK17U-jre_x64_windows_hotspot_17.0.4.1_1"
+    DetailPrint "Downloading Java JRE ${JREVersion}..."
+    NScurl::http GET "${JREDownloadURL}" "${SLIMETEMP}\${JREDownloadedFileZip}" /CANCEL /RESUME /END
+    
     Pop $0 ; Status text ("OK" for success)
     ${If} $0 != "OK"
-        Abort "Failed to download Java JRE 17. Reason: $0."
+        Abort "Failed to download Java JRE ${JREVersion}. Reason: $0."
     ${EndIf}
     DetailPrint "Downloaded!"
 
-    DetailPrint "Unzipping Java JRE 17 to installation folder...."
-    nsisunz::Unzip "$TEMP\$DownloadedJreFile.zip" "$TEMP\$DownloadedJreFile\"
+    # Make sure to delete all files on a update from jre, so if there is a new version no old files are left.
+    IfFileExists "$INSTDIR\jre" 0 SEC_JRE_DIRNOTFOUND
+        DetailPrint "Removing old Java JRE..."
+        RMdir /r "$INSTDIR\jre"
+        CreateDirectory "$INSTDIR\jre"
+    SEC_JRE_DIRNOTFOUND:
+
+    DetailPrint "Unzipping Java JRE ${JREVersion} to installation folder...."
+    nsisunz::Unzip "${SLIMETEMP}\${JREDownloadedFileZip}" "${SLIMETEMP}\OpenJDK\"
     Pop $0
     DetailPrint "Unzipping finished with $0."
-    CopyFiles /SILENT "$TEMP\$DownloadedJreFile\jdk-17.0.4.1+1-jre\*" "$INSTDIR\jre"
+
+    FindFirst $0 $1 "${SLIMETEMP}\OpenJDK\jdk-17.*-jre"
+    loop:
+        StrCmp $1 "" done
+        CopyFiles /SILENT "${SLIMETEMP}\OpenJDK\$1\*" "$INSTDIR\jre"
+        FindNext $0 $1
+        Goto loop
+    done:
+    FindClose $0
 SectionEnd
 
 Section "SteamVR Driver" SEC_VRDRIVER
     SetOutPath $INSTDIR
 
     DetailPrint "Downloading SteamVR Driver..."
-    NScurl::http GET "https://github.com/SlimeVR/SlimeVR-OpenVR-Driver/releases/latest/download/slimevr-openvr-driver-win64.zip" "$TEMP\slimevr-openvr-driver-win64.zip" /CANCEL /RESUME /END
+    NScurl::http GET "https://github.com/SlimeVR/SlimeVR-OpenVR-Driver/releases/latest/download/slimevr-openvr-driver-win64.zip" "${SLIMETEMP}\slimevr-openvr-driver-win64.zip" /CANCEL /RESUME /END
     Pop $0 ; Status text ("OK" for success)
     ${If} $0 != "OK"
         Abort "Failed to download SteamVR Driver. Reason: $0."
@@ -385,7 +481,7 @@ Section "SteamVR Driver" SEC_VRDRIVER
     DetailPrint "Downloaded!"
 
     DetailPrint "Unpacking downloaded files..."
-    nsisunz::Unzip "$TEMP\slimevr-openvr-driver-win64.zip" "$TEMP\slimevr-openvr-driver-win64\"
+    nsisunz::Unzip "${SLIMETEMP}\slimevr-openvr-driver-win64.zip" "${SLIMETEMP}\slimevr-openvr-driver-win64\"
     Pop $0
     DetailPrint "Unzipping finished with $0."
 
@@ -395,7 +491,7 @@ Section "SteamVR Driver" SEC_VRDRIVER
     DetailPrint "Copying SteamVR Driver to SteamVR..."
     # If powershell is present - rely on automatic detection.
     ${DisableX64FSRedirection}
-    nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Bypass -File "$INSTDIR\steamvr.ps1" -SteamPath "$STEAMDIR" -DriverPath "$TEMP\slimevr-openvr-driver-win64\slimevr"' $0
+    nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Bypass -File "$INSTDIR\steamvr.ps1" -SteamPath "$STEAMDIR" -DriverPath "${SLIMETEMP}\slimevr-openvr-driver-win64\slimevr"' $0
     ${EnableX64FSRedirection}
     Pop $0
     ${If} $0 != 0
@@ -404,7 +500,7 @@ Section "SteamVR Driver" SEC_VRDRIVER
         ${If} $0 == "error"
             Abort "Failed to copy SlimeVR Driver."
         ${Endif}
-        CopyFiles /SILENT "$TEMP\slimevr-openvr-driver-win64\slimevr" "$0\drivers\slimevr"
+        CopyFiles /SILENT "${SLIMETEMP}\slimevr-openvr-driver-win64\slimevr" "$0\drivers\slimevr"
     ${EndIf}
 SectionEnd
 
@@ -412,7 +508,7 @@ Section "SlimeVR Feeder App" SEC_FEEDER_APP
     SetOutPath $INSTDIR
 
     DetailPrint "Downloading SlimeVR Feeder App..."
-    NScurl::http GET "https://github.com/SlimeVR/SlimeVR-Feeder-App/releases/latest/download/SlimeVR-Feeder-App-win64.zip" "$TEMP\SlimeVR-Feeder-App-win64.zip" /CANCEL /RESUME /END
+    NScurl::http GET "https://github.com/SlimeVR/SlimeVR-Feeder-App/releases/latest/download/SlimeVR-Feeder-App-win64.zip" "${SLIMETEMP}\SlimeVR-Feeder-App-win64.zip" /CANCEL /RESUME /END
     Pop $0 ; Status text ("OK" for success)
     ${If} $0 != "OK"
         Abort "Failed to download SlimeVR Feeder App. Reason: $0."
@@ -420,12 +516,12 @@ Section "SlimeVR Feeder App" SEC_FEEDER_APP
     DetailPrint "Downloaded!"
 
     DetailPrint "Unpacking downloaded files..."
-    nsisunz::Unzip "$TEMP\SlimeVR-Feeder-App-win64.zip" "$TEMP"
+    nsisunz::Unzip "${SLIMETEMP}\SlimeVR-Feeder-App-win64.zip" "${SLIMETEMP}"
     Pop $0
     DetailPrint "Unzipping finished with $0."
 
     DetailPrint "Copying SlimeVR Feeder App..."
-    CopyFiles /SILENT "$TEMP\SlimeVR-Feeder-App-win64\*" "$INSTDIR\Feeder-App"
+    CopyFiles /SILENT "${SLIMETEMP}\SlimeVR-Feeder-App-win64\*" "$INSTDIR\Feeder-App"
 
     DetailPrint "Installing SlimeVR Feeder App driver..."
     nsExec::ExecToLog '"$INSTDIR\Feeder-App\SlimeVR-Feeder-App.exe" --install'
@@ -435,11 +531,11 @@ SectionGroup /e "USB drivers" SEC_USBDRIVERS
 
     Section "CP210x driver" SEC_CP210X
         # CP210X drivers (NodeMCU v2)
-        SetOutPath "$TEMP\slimevr_usb_drivers_inst\CP201x"
+        SetOutPath "${SLIMETEMP}\slimevr_usb_drivers_inst\CP201x"
         DetailPrint "Installing CP210x driver..."
         File /r "CP201x\*"
         ${DisableX64FSRedirection}
-        nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "$TEMP\slimevr_usb_drivers_inst\CP201x\silabser.inf"' $0
+        nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "${SLIMETEMP}\slimevr_usb_drivers_inst\CP201x\silabser.inf"' $0
         ${EnableX64FSRedirection}
         Pop $0
         ${If} $0 == 0
@@ -455,11 +551,11 @@ SectionGroup /e "USB drivers" SEC_USBDRIVERS
 
     Section "CH340 driver" SEC_CH340
         # CH340 drivers (NodeMCU v3)
-        SetOutPath "$TEMP\slimevr_usb_drivers_inst\CH341SER"
+        SetOutPath "${SLIMETEMP}\slimevr_usb_drivers_inst\CH341SER"
         DetailPrint "Installing CH340 driver..."
         File /r "CH341SER\*"
         ${DisableX64FSRedirection}
-        nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "$TEMP\slimevr_usb_drivers_inst\CH341SER\CH341SER.INF"' $0
+        nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "${SLIMETEMP}\slimevr_usb_drivers_inst\CH341SER\CH341SER.INF"' $0
         ${EnableX64FSRedirection}
         Pop $0
         ${If} $0 == 0
@@ -475,11 +571,11 @@ SectionGroup /e "USB drivers" SEC_USBDRIVERS
 
     Section /o "CH9102x driver" SEC_CH9102X
         # CH343 drivers (NodeMCU v2.1, some NodeMCU v3?)
-        SetOutPath "$TEMP\slimevr_usb_drivers_inst\CH343SER"
+        SetOutPath "${SLIMETEMP}\slimevr_usb_drivers_inst\CH343SER"
         DetailPrint "Installing CH910x driver..."
         File /r "CH343SER\*"
         ${DisableX64FSRedirection}
-        nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "$TEMP\slimevr_usb_drivers_inst\CH343SER\CH343SER.INF"' $0
+        nsExec::Exec '"$SYSDIR\PnPutil.exe" -i -a "${SLIMETEMP}\slimevr_usb_drivers_inst\CH343SER\CH343SER.INF"' $0
         ${EnableX64FSRedirection}
         Pop $0
         ${If} $0 == 0
@@ -541,10 +637,10 @@ Section
 SectionEnd
 
 Function componentsPre
+    Call JREdetect
     ${If} $SELECTED_INSTALLER_ACTION == "update"
         SectionSetFlags ${SEC_FIREWALL} 0
         SectionSetFlags ${SEC_REGISTERAPP} 0
-        SectionSetFlags ${SEC_JRE} ${SF_SELECTED}
         SectionSetFlags ${SEC_WEBVIEW} ${SF_SELECTED}
         SectionSetFlags ${SEC_USBDRIVERS} ${SF_SECGRP}
         SectionSetFlags ${SEC_SERVER} ${SF_SELECTED}
@@ -558,7 +654,19 @@ Function componentsPre
         SectionSetFlags ${SEC_FEEDER_APP} ${SF_SELECTED}
     ${EndIf}
 
+    # Select JRE Mandatory if not found or outdated on Repair Preselect it
+    ${If} $JREneedInstall == "True"
+        SectionSetFlags ${SEC_JRE} ${SF_SELECTED}|${SF_RO}
+    ${ElseIf} $SELECTED_INSTALLER_ACTION == "repair"
+        SectionSetFlags ${SEC_JRE} ${SF_SELECTED}
+    ${Else}        
+        SectionSetFlags ${SEC_JRE} ${SF_USELECTED}
+    ${EndIf}
+
     # Detect WebView2
+    # https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution#detect-if-a-suitable-webview2-runtime-is-already-installed
+    # Trying to solve #41 Installer doesn't always install WebView2
+    # Ignoring only user installed WebView2 it seems to make problems
     ${If} ${RunningX64}
         ReadRegStr $0 HKLM "SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
         ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
@@ -568,10 +676,24 @@ Function componentsPre
     ${EndIf}
 
     ${If} $0 == ""
+    ${OrIf} $0 == "0.0.0.0"
+        StrCpy $0 ""
+    ${Else}
+        StrCpy $0 "1"
+    ${EndIf}
+
+    ${If} $1 == ""
+    ${OrIf} $1 == "0.0.0.0"
+        StrCpy $1 ""
+    ${Else}
+        StrCpy $1 "1"
+    ${EndIf}
+
+    ${If} $0 == ""
     ${AndIf} $1 == ""
         SectionSetFlags ${SEC_WEBVIEW} ${SF_SELECTED}|${SF_RO}
     ${Else}
-        SectionSetFlags ${SEC_WEBVIEW} ${SF_USELECTED}|${SF_RO}
+        SectionSetFlags ${SEC_WEBVIEW} ${SF_USELECTED}
     ${EndIf}
 
 FunctionEnd
@@ -653,6 +775,9 @@ LangString DESC_SEC_CP210X ${LANG_ENGLISH} "Installs CP210X USB driver that come
 LangString DESC_SEC_CH340 ${LANG_ENGLISH} "Installs CH340 USB driver that comes with the following boards: NodeMCU v3, SlimeVR, Wemos D1 Mini."
 LangString DESC_SEC_CH9102x ${LANG_ENGLISH} "Installs CH9102x USB driver that comes with the following boards: NodeMCU v2.1."
 LangString DESC_STEAM_NOTFOUND ${LANG_ENGLISH} "No Steam installation detected. Steam and SteamVR are required to be installed and run at least once to install the SteamVR Driver."
+LangString DESC_STEAMVR_RUNNING ${LANG_ENGLISH} "SteamVR is running! Please close SteamVR."
+LangString DESC_SLIMEVR_RUNNING ${LANG_ENGLISH} "SlimeVR is running! Please close SlimeVR."
+LangString DESC_PROCESS_ERROR ${LANG_ENGLISH} "An error happend while trying for look for $0 nsProcess::FindProcess Returns "
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_SERVER} $(DESC_SEC_SERVER)

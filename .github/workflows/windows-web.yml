@@ -23,7 +23,7 @@ jobs:
         shell: bash
         
       - name: Create NSIS installer
-        uses: joncloud/makensis-action@v3.6
+        uses: joncloud/makensis-action@v4
         with:
           script-file: ${{ env.WINDOWS_WEB_DIR }}/slimevr_web_installer.nsi
           additional-plugin-paths: ${{ env.PLUGINS_DIR }}
