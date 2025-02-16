@@ -134,6 +134,7 @@ FunctionEnd
 Page Custom startPage startPageLeave
 
 !define MUI_PAGE_CUSTOMFUNCTION_PRE componentsPre
+# !define MUI_PAGE_CUSTOMFUNCTION_SHOW componentsShow
 !insertmacro MUI_PAGE_COMPONENTS
 
 !define MUI_PAGE_CUSTOMFUNCTION_PRE installerActionPre
@@ -677,6 +678,7 @@ Function componentsPre
         SectionSetFlags ${SEC_FIREWALL} 0
         SectionSetFlags ${SEC_REGISTERAPP} 0
         SectionSetFlags ${SEC_WEBVIEW} ${SF_SELECTED}
+        SectionSetFlags ${SEC_MSVCPP} ${SF_SELECTED}
         SectionSetFlags ${SEC_USBDRIVERS} ${SF_SECGRP}
         SectionSetFlags ${SEC_SERVER} ${SF_SELECTED}
     ${EndIf}
@@ -684,7 +686,7 @@ Function componentsPre
         MessageBox MB_OK $(DESC_STEAM_NOTFOUND)
         SectionSetFlags ${SEC_VRDRIVER} ${SF_USELECTED}|${SF_RO}
         SectionSetFlags ${SEC_FEEDER_APP} ${SF_USELECTED}|${SF_RO}
-        SectionSetFlags ${SEC_MSVCPP} ${SF_USELECTED}
+        SectionSetFlags ${SEC_MSVCPP} ${SF_USELECTED}|${SF_RO}
     ${Else}
         SectionSetFlags ${SEC_VRDRIVER} ${SF_SELECTED}
         SectionSetFlags ${SEC_FEEDER_APP} ${SF_SELECTED}
@@ -732,7 +734,19 @@ Function componentsPre
     ${Else}
         SectionSetFlags ${SEC_WEBVIEW} ${SF_USELECTED}
     ${EndIf}
+FunctionEnd
 
+Function .onSelChange
+    SectionGetFlags ${SEC_VRDRIVER} $0
+    IntOp $0 $0 & ${SF_SELECTED}
+    SectionGetFlags ${SEC_FEEDER_APP} $1
+    IntOp $1 $1 & ${SF_SELECTED}
+    IntOp $0 $0 | $1
+    ${If} $0 == ${SF_SELECTED}
+        SectionSetFlags ${SEC_MSVCPP} ${SF_SELECTED}|${SF_RO}
+    ${Else}
+        SectionSetFlags ${SEC_MSVCPP} ${SF_USELECTED}|${SF_RO}
+    ${EndIf}
 FunctionEnd
 
 Section "-un.SlimeVR Server" un.SEC_SERVER
