@@ -19,9 +19,9 @@ Unicode True
 !define SLIMETEMP "$TEMP\SlimeVRInstaller"
 
 # Define the Java Version Strings and to Check (JRE\relase -> JAVA_RUNTIME_VERSION=)
-!define JREVersion "17.0.10+7"
-!define JREDownloadURL "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jre_x64_windows_hotspot_17.0.10_7.zip"
-!define JREDownloadedFileZip "OpenJDK17U-jre_x64_windows_hotspot_17.0.10_7.zip"
+!define JREVersion "17.0.14+7"
+!define JREDownloadURL "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.14%2B7/OpenJDK17U-jre_x64_windows_hotspot_17.0.14_7.zip"
+!define JREDownloadedFileZip "OpenJDK17U-jre_x64_windows_hotspot_17.0.14_7.zip"
 Var JREneedInstall
 
 Var /GLOBAL SteamVRResult
@@ -134,6 +134,7 @@ FunctionEnd
 Page Custom startPage startPageLeave
 
 !define MUI_PAGE_CUSTOMFUNCTION_PRE componentsPre
+# !define MUI_PAGE_CUSTOMFUNCTION_SHOW componentsShow
 !insertmacro MUI_PAGE_COMPONENTS
 
 !define MUI_PAGE_CUSTOMFUNCTION_PRE installerActionPre
@@ -527,6 +528,41 @@ Section "SlimeVR Feeder App" SEC_FEEDER_APP
     nsExec::ExecToLog '"$INSTDIR\Feeder-App\SlimeVR-Feeder-App.exe" --install'
 SectionEnd
 
+Section "Microsoft Visual C++ Redistributable" SEC_MSVCPP
+    SetOutPath $INSTDIR
+    DetailPrint "Downloading Microsoft Visual C++ Redistributable..."
+    NScurl::http GET "https://aka.ms/vs/17/release/vc_redist.x64.exe" "${SLIMETEMP}\vc_redist.x64.exe" /CANCEL /RESUME /END
+    Pop $0 ; Status text ("OK" for success)
+    ${If} $0 != "OK"
+        Abort "Failed to download Microsoft Visual C++ Redistributable. Reason: $0."
+    ${EndIf}
+    DetailPrint "Downloaded!"
+    DetailPrint "Installing Microsoft Visual C++ Redistributable..."
+    nsExec::ExecToLog '"${SLIMETEMP}\vc_redist.x64.exe" /install /passive /norestart' $0
+    Pop $0 ; Status text ("OK" for success)
+    ; Handle return codes
+    ${If} $0 == 0
+        DetailPrint "Microsoft Visual C++ Redistributable installed successfully."
+    ${ElseIf} $0 == 3010
+        DetailPrint "Microsoft Visual C++ Redistributable installed successfully, but a reboot is required."
+        SetRebootFlag true
+    ${ElseIf} $0 == 1602
+        Abort "User canceled the Microsoft Visual C++ Redistributable installation."
+    ${ElseIf} $0 == 1603
+        Abort "Fatal error during Microsoft Visual C++ Redistributable installation."
+    ${ElseIf} $0 == 1618
+        Abort "Installation aborted: Another installation is in progress."
+    ${ElseIf} $0 == 1638
+        DetailPrint "Microsoft Visual C++ Redistributable is already installed or a newer version is present."
+    ${ElseIf} $0 == 1641
+        DetailPrint "Microsoft Visual C++ Redistributable installed successfully, and a system restart is happening."
+    ${ElseIf} $0 == 5100
+        Abort "Installation failed: Unsupported operating system."
+    ${Else}
+        Abort "Microsoft Visual C++ Redistributable installation failed with unknown error code: $0"
+    ${EndIf}
+SectionEnd
+
 SectionGroup /e "USB drivers" SEC_USBDRIVERS
 
     Section "CP210x driver" SEC_CP210X
@@ -642,6 +678,7 @@ Function componentsPre
         SectionSetFlags ${SEC_FIREWALL} 0
         SectionSetFlags ${SEC_REGISTERAPP} 0
         SectionSetFlags ${SEC_WEBVIEW} ${SF_SELECTED}
+        SectionSetFlags ${SEC_MSVCPP} ${SF_SELECTED}
         SectionSetFlags ${SEC_USBDRIVERS} ${SF_SECGRP}
         SectionSetFlags ${SEC_SERVER} ${SF_SELECTED}
     ${EndIf}
@@ -649,9 +686,11 @@ Function componentsPre
         MessageBox MB_OK $(DESC_STEAM_NOTFOUND)
         SectionSetFlags ${SEC_VRDRIVER} ${SF_USELECTED}|${SF_RO}
         SectionSetFlags ${SEC_FEEDER_APP} ${SF_USELECTED}|${SF_RO}
+        SectionSetFlags ${SEC_MSVCPP} ${SF_USELECTED}|${SF_RO}
     ${Else}
         SectionSetFlags ${SEC_VRDRIVER} ${SF_SELECTED}
         SectionSetFlags ${SEC_FEEDER_APP} ${SF_SELECTED}
+        SectionSetFlags ${SEC_MSVCPP} ${SF_SELECTED}|${SF_RO}
     ${EndIf}
 
     # Select JRE Mandatory if not found or outdated on Repair Preselect it
@@ -695,7 +734,19 @@ Function componentsPre
     ${Else}
         SectionSetFlags ${SEC_WEBVIEW} ${SF_USELECTED}
     ${EndIf}
+FunctionEnd
 
+Function .onSelChange
+    SectionGetFlags ${SEC_VRDRIVER} $0
+    IntOp $0 $0 & ${SF_SELECTED}
+    SectionGetFlags ${SEC_FEEDER_APP} $1
+    IntOp $1 $1 & ${SF_SELECTED}
+    IntOp $0 $0 | $1
+    ${If} $0 == ${SF_SELECTED}
+        SectionSetFlags ${SEC_MSVCPP} ${SF_SELECTED}|${SF_RO}
+    ${Else}
+        SectionSetFlags ${SEC_MSVCPP} ${SF_USELECTED}|${SF_RO}
+    ${EndIf}
 FunctionEnd
 
 Section "-un.SlimeVR Server" un.SEC_SERVER
@@ -771,6 +822,7 @@ LangString DESC_SEC_WEBVIEW ${LANG_ENGLISH} "Downloads and install Webview2 if n
 LangString DESC_SEC_VRDRIVER ${LANG_ENGLISH} "Installs latest SteamVR Driver for SlimeVR."
 LangString DESC_SEC_USBDRIVERS ${LANG_ENGLISH} "A list of USB drivers that are used by various boards."
 LangString DESC_SEC_FEEDER_APP ${LANG_ENGLISH} "Installs SlimeVR Feeder App that sends position of SteamVR trackers (Vive trackers, controllers) to SlimeVR Server. Required for elbow tracking."
+LangString DESC_SEC_MSVCPP ${LANG_ENGLISH} "Installs the latest Microsoft Visual C++ Redistributable Version (required by the SteamVR Driver and the SlimeVR Feeder)"
 LangString DESC_SEC_CP210X ${LANG_ENGLISH} "Installs CP210X USB driver that comes with the following boards: NodeMCU v2, Wemos D1 Mini."
 LangString DESC_SEC_CH340 ${LANG_ENGLISH} "Installs CH340 USB driver that comes with the following boards: NodeMCU v3, SlimeVR, Wemos D1 Mini."
 LangString DESC_SEC_CH9102x ${LANG_ENGLISH} "Installs CH9102x USB driver that comes with the following boards: NodeMCU v2.1."
@@ -784,6 +836,8 @@ LangString DESC_PROCESS_ERROR ${LANG_ENGLISH} "An error happend while trying for
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_JRE} $(DESC_SEC_JRE)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_WEBVIEW} $(DESC_SEC_WEBVIEW)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_VRDRIVER} $(DESC_SEC_VRDRIVER)
+    !insertmacro MUI_DESCRIPTION_TEXT ${SEC_FEEDER_APP} $(DESC_SEC_FEEDER_APP)
+    !insertmacro MUI_DESCRIPTION_TEXT ${SEC_MSVCPP} $(DESC_SEC_MSVCPP)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_USBDRIVERS} $(DESC_SEC_USBDRIVERS)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_CP210X} $(DESC_SEC_CP210X)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_CH340} $(DESC_SEC_CH340)
