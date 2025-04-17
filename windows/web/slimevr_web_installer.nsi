@@ -19,9 +19,9 @@ Unicode True
 !define SLIMETEMP "$TEMP\SlimeVRInstaller"
 
 # Define the Java Version Strings and to Check (JRE\relase -> JAVA_RUNTIME_VERSION=)
-!define JREVersion "17.0.14+7"
-!define JREDownloadURL "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.14%2B7/OpenJDK17U-jre_x64_windows_hotspot_17.0.14_7.zip"
-!define JREDownloadedFileZip "OpenJDK17U-jre_x64_windows_hotspot_17.0.14_7.zip"
+!define JREVersion "17.0.15+6"
+!define JREDownloadURL "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.15%2B6/OpenJDK17U-jre_x64_windows_hotspot_17.0.15_6.zip"
+!define JREDownloadedFileZip "OpenJDK17U-jre_x64_windows_hotspot_17.0.15_6.zip"
 Var JREneedInstall
 
 Var /GLOBAL SteamVRResult
