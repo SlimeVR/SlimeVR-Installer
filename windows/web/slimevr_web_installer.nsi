@@ -280,7 +280,7 @@ Function endPageLeave
     ${EndIf}
 
     ${If} $3 = 1
-        nsExec::ExecToLog '"$INSTDIR\slimevr.exe"'
+        Exec "$INSTDIR\slimevr.exe"
     ${EndIf}
 
 FunctionEnd
