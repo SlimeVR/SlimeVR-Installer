@@ -64,6 +64,7 @@ Var SELECTED_INSTALLER_ACTION
 Var CREATE_DESKTOP_SHORTCUT
 Var CREATE_STARTMENU_SHORTCUTS
 Var OPEN_DOCUMENTATION
+Var OPEN_SLIMEVR
 
 # Detected Steam folder
 Var STEAMDIR
@@ -225,7 +226,7 @@ Function endPage
     ${NSD_CreateLabel} 0 0 100% 12u "The installation is finished!"
     Pop $0
 
-    ${NSD_CreateCheckbox} 0 25u 100% 10u "Open SlimeVR documentation"
+    ${NSD_CreateCheckbox} 0 25u 100% 10u "Open SlimeVR Quick setup guide"
     Pop $OPEN_DOCUMENTATION
     # Don't open documentation if we're updating
     ${If} $SELECTED_INSTALLER_ACTION == ""
@@ -235,9 +236,14 @@ Function endPage
     ${NSD_CreateCheckbox} 0 40u 100% 10u "Create Desktop shortcut"
     Pop $CREATE_DESKTOP_SHORTCUT
     ${NSD_Check} $CREATE_DESKTOP_SHORTCUT
+    
     ${NSD_CreateCheckbox} 0 55u 100% 10u "Create Start Menu shortcuts"
     Pop $CREATE_STARTMENU_SHORTCUTS
     ${NSD_Check} $CREATE_STARTMENU_SHORTCUTS
+
+    ${NSD_CreateCheckbox} 0 70u 100% 10u "Open SlimeVR Server"
+    Pop $OPEN_SLIMEVR
+    ${NSD_Check} $OPEN_SLIMEVR
 
     nsDialogs::Show
 
@@ -251,6 +257,7 @@ Function endPageLeave
     ${NSD_GetState} $CREATE_STARTMENU_SHORTCUTS $0
     ${NSD_GetState} $CREATE_DESKTOP_SHORTCUT $1
     ${NSD_GetState} $OPEN_DOCUMENTATION $2
+    ${NSD_GetState} $OPEN_SLIMEVR $3
 
     ${If} $0 = 1
         CreateDirectory "$SMPROGRAMS\SlimeVR Server"
@@ -269,7 +276,11 @@ Function endPageLeave
     ${EndIf}
     
     ${If} $2 = 1
-        ExecShell "open" "https://docs.slimevr.dev/server-setup/slimevr-setup.html"
+        ExecShell "open" "https://docs.slimevr.dev/quick-setup.html#connecting-and-preparing-your-trackers"
+    ${EndIf}
+
+    ${If} $3 = 1
+        Exec "$INSTDIR\slimevr.exe"
     ${EndIf}
 
 FunctionEnd
