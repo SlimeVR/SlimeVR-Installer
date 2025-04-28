@@ -33,13 +33,13 @@ Var /GLOBAL SlimeVRLabelID
 Var /GLOBAL SlimeVRLabelTxt
 
 # Define name of installer
-Name "SlimeVR"
+Name "SlimeVR v0.15.0-rc.3 Installer"
 
 SpaceTexts none # Don't show required disk space since we don't know for sure
 SetOverwrite on
 SetCompressor lzma  # Use LZMA Compression algorithm, compression quality is better.
 
-OutFile "slimevr_web_installer.exe"
+OutFile "slimevr_web_installer_beta_v0.15.0-rc.3.exe"
 
 # Define installation directory
 InstallDir "$PROGRAMFILES\SlimeVR Server" ; $InstDir default value. Defaults to user's local appdata to avoid asking admin rights
@@ -47,7 +47,7 @@ InstallDir "$PROGRAMFILES\SlimeVR Server" ; $InstDir default value. Defaults to 
 ShowInstDetails show
 ShowUninstDetails show
 
-BrandingText "SlimeVR Installer 0.2.0"
+BrandingText "SlimeVR Installer beta Installer for SlimeVR Server v0.15.0-rc.3"
 
 # Admin rights are required for:
 # 1. Removing Start Menu shortcut in Windows 7+
@@ -398,8 +398,8 @@ Section "SlimeVR Server" SEC_SERVER
 
     SetOutPath $INSTDIR
 
-    DetailPrint "Downloading SlimeVR Server..."
-    NScurl::http GET "https://github.com/SlimeVR/SlimeVR-Server/releases/latest/download/SlimeVR-win64.zip" "${SLIMETEMP}\SlimeVR-win64.zip" /CANCEL /RESUME /END
+    DetailPrint "Downloading SlimeVR Server v0.15.0-rc.3 ..."
+    NScurl::http GET "https://github.com/SlimeVR/SlimeVR-Server/releases/download/v0.15.0-rc.3/SlimeVR-win64.zip" "${SLIMETEMP}\SlimeVR-win64.zip" /CANCEL /RESUME /END
     Pop $0 ; Status text ("OK" for success)
     ${If} $0 != "OK"
         Abort "Failed to download SlimeVR Server. Reason: $0."
@@ -828,7 +828,7 @@ Section "-un." un.SEC_POST_UNINSTALL
     DetailPrint "Done."
 SectionEnd
 
-LangString DESC_SEC_SERVER ${LANG_ENGLISH} "Installs latest SlimeVR Server."
+LangString DESC_SEC_SERVER ${LANG_ENGLISH} "Installs v0.15.0-rc.3 SlimeVR Server."
 LangString DESC_SEC_JRE ${LANG_ENGLISH} "Downloads and copies Java JRE 17 to installation folder. Required for SlimeVR Server."
 LangString DESC_SEC_WEBVIEW ${LANG_ENGLISH} "Downloads and install Webview2 if not already installed. Required for the SlimeVR GUI"
 LangString DESC_SEC_VRDRIVER ${LANG_ENGLISH} "Installs latest SteamVR Driver for SlimeVR."
