@@ -640,12 +640,13 @@ SectionGroupEnd
 
 Section "-" SEC_FIREWALL
     ${If} $SELECTED_INSTALLER_ACTION == "repair"
+        ${OrIf} $SELECTED_INSTALLER_ACTION == "update"
         DetailPrint "Removing SlimeVR Server from firewall exceptions...."
-        nsExec::Exec '"$INSTDIR\firewall_uninstall.bat"'
+        nsExec::ExecToLog '"$INSTDIR\firewall_uninstall.bat"'
     ${Endif}
 
     DetailPrint "Adding SlimeVR Server to firewall exceptions...."
-    nsExec::Exec '"$INSTDIR\firewall.bat"'
+    nsExec::ExecToLog '"$INSTDIR\firewall.bat"'
 SectionEnd
 
 Section "-" SEC_REGISTERAPP
@@ -686,7 +687,7 @@ SectionEnd
 Function componentsPre
     Call JREdetect
     ${If} $SELECTED_INSTALLER_ACTION == "update"
-        SectionSetFlags ${SEC_FIREWALL} 0
+        SectionSetFlags ${SEC_FIREWALL} ${SF_SELECTED}
         SectionSetFlags ${SEC_REGISTERAPP} 0
         SectionSetFlags ${SEC_WEBVIEW} ${SF_SELECTED}
         SectionSetFlags ${SEC_MSVCPP} ${SF_SELECTED}
