@@ -24,6 +24,18 @@ Unicode True
 !define JREDownloadedFileZip "OpenJDK17U-jre_x64_windows_hotspot_17.0.15_6.zip"
 Var JREneedInstall
 
+!define SVRServerVersion "1.20.0"
+!define SVRServerDownloadURL "https://github.com/SlimeVR/SlimeVR-Server/releases/download/v1.20.0/SlimeVR-Server-1.20.0.zip"
+!define SVRServerDownloadedFileZip "SlimeVR-Server-1.20.0.zip"
+
+!define SVRDriverVersion "0.2.2"
+!define SVRDriverDownloadURL "https://github.com/SlimeVR/SlimeVR-OpenVR-Driver/releases/download/v0.2.2/slimevr-openvr-driver-win64.zip"
+!define SVRDriverDownloadedFileZip "slimevr-openvr-driver-win64.zip"
+
+!define SVRFeederVersion "0.2.11"
+!define SVRFeederDownloadURL "https://github.com/SlimeVR/SlimeVR-Feeder-App/releases/download/v0.2.11/SlimeVR-Feeder-App-win64.zip"
+!define SVRFeederDownloadedFileZip "SlimeVR-Feeder-0.2.11.zip"
+
 Var /GLOBAL SteamVRResult
 Var /GLOBAL SteamVRLabelID
 Var /GLOBAL SteamVRLabelTxt
