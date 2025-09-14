@@ -1,5 +1,17 @@
 Unicode True
 
+!AddPluginDir /x86-unicode     "plugins\NScurl\x86-unicode"
+!AddPluginDir /x86-ansi        "plugins\NScurl\x86-ansi"
+!AddPluginDir /amd64-unicode   "plugins\NScurl\amd64-unicode"
+!AddPluginDir /x86-unicode     "plugins\AccessControl\x86-unicode"
+!AddPluginDir /x86-ansi        "plugins\AccessControl\x86-ansi"
+!AddPluginDir /amd64-unicode   "plugins\AccessControl\amd64-unicode"
+!AddPluginDir /x86-unicode     "plugins\Nsisunz\x86-unicode"
+!AddPluginDir /x86-ansi        "plugins\Nsisunz\x86-ansi"
+!AddPluginDir /x86-unicode     "plugins\NsProcess\x86-unicode"
+!AddPluginDir /x86-ansi        "plugins\NsProcess\x86-ansi"
+!AddPluginDir /amd64-unicode   "plugins\NsProcess\amd64-unicode"
+
 !include x64.nsh 		; For RunningX64 check
 !include LogicLib.nsh	; For conditional operators
 !include nsDialogs.nsh  ; For custom pages
@@ -9,6 +21,7 @@ Unicode True
 !include TextFunc.nsh   ; For ConfigRead
 !include MUI2.nsh
 !include .\steamdetect.nsh
+!include .\dlmacro.nsh
 
 !define SF_USELECTED  0
 !define MUI_ICON "run.ico"
@@ -24,17 +37,17 @@ Unicode True
 !define JREDownloadedFileZip "OpenJDK17U-jre_x64_windows_hotspot_17.0.15_6.zip"
 Var JREneedInstall
 
-!define SVRServerVersion "1.20.0"
-!define SVRServerDownloadURL "https://github.com/SlimeVR/SlimeVR-Server/releases/download/v1.20.0/SlimeVR-Server-1.20.0.zip"
-!define SVRServerDownloadedFileZip "SlimeVR-Server-1.20.0.zip"
+!define SVRServerVersion "latest"
+!define SVRServerDownloadURL "https://github.com/SlimeVR/SlimeVR-Server/releases/latest/download/SlimeVR-win64.zip"
+!define SVRServerDownloadedFileZip "SlimeVR-Server-latest.zip"
 
-!define SVRDriverVersion "0.2.2"
-!define SVRDriverDownloadURL "https://github.com/SlimeVR/SlimeVR-OpenVR-Driver/releases/download/v0.2.2/slimevr-openvr-driver-win64.zip"
+!define SVRDriverVersion "latest"
+!define SVRDriverDownloadURL "https://github.com/SlimeVR/SlimeVR-OpenVR-Driver/releases/latest/download/slimevr-openvr-driver-win64.zip"
 !define SVRDriverDownloadedFileZip "slimevr-openvr-driver-win64.zip"
 
-!define SVRFeederVersion "0.2.11"
-!define SVRFeederDownloadURL "https://github.com/SlimeVR/SlimeVR-Feeder-App/releases/download/v0.2.11/SlimeVR-Feeder-App-win64.zip"
-!define SVRFeederDownloadedFileZip "SlimeVR-Feeder-0.2.11.zip"
+!define SVRFeederVersion "latest"
+!define SVRFeederDownloadURL "https://github.com/SlimeVR/SlimeVR-Feeder-App/releases/latest/download/SlimeVR-Feeder-App-win64.zip"
+!define SVRFeederDownloadedFileZip "SlimeVR-Feeder-App-latest.zip"
 
 Var /GLOBAL SteamVRResult
 Var /GLOBAL SteamVRLabelID
@@ -410,17 +423,7 @@ Section "SlimeVR Server" SEC_SERVER
 
     SetOutPath $INSTDIR
 
-    DetailPrint "Downloading SlimeVR Server..."
-    NScurl::http GET "https://github.com/SlimeVR/SlimeVR-Server/releases/latest/download/SlimeVR-win64.zip" "${SLIMETEMP}\SlimeVR-win64.zip" /CANCEL /RESUME /END
-    Pop $0 ; Status text ("OK" for success)
-    ${If} $0 != "OK"
-        Abort "Failed to download SlimeVR Server. Reason: $0."
-    ${EndIf}
-    DetailPrint "Downloaded!"
-
-    nsisunz::Unzip "${SLIMETEMP}\SlimeVR-win64.zip" "${SLIMETEMP}\SlimeVR\"
-    Pop $0
-    DetailPrint "Unzipping finished with $0."
+    !insertmacro dlFiles "SlimeVR Server" "${SVRServerVersion}" "${SVRServerDownloadURL}" "${SVRServerDownloadedFileZip}" "SlimeVR"
 
     ${If} $SELECTED_INSTALLER_ACTION == "update"
         Delete "$INSTDIR\slimevr-ui.exe"
@@ -462,14 +465,7 @@ SectionEnd
 Section "Java JRE" SEC_JRE
     SectionIn RO
     
-    DetailPrint "Downloading Java JRE ${JREVersion}..."
-    NScurl::http GET "${JREDownloadURL}" "${SLIMETEMP}\${JREDownloadedFileZip}" /CANCEL /RESUME /END
-    
-    Pop $0 ; Status text ("OK" for success)
-    ${If} $0 != "OK"
-        Abort "Failed to download Java JRE ${JREVersion}. Reason: $0."
-    ${EndIf}
-    DetailPrint "Downloaded!"
+    !insertmacro dlFiles "Java JRE" "${JREVersion}" "${JREDownloadURL}" "${JREDownloadedFileZip}" "OpenJDK"
 
     # Make sure to delete all files on a update from jre, so if there is a new version no old files are left.
     IfFileExists "$INSTDIR\jre" 0 SEC_JRE_DIRNOTFOUND
@@ -477,12 +473,7 @@ Section "Java JRE" SEC_JRE
         RMdir /r "$INSTDIR\jre"
         CreateDirectory "$INSTDIR\jre"
     SEC_JRE_DIRNOTFOUND:
-
-    DetailPrint "Unzipping Java JRE ${JREVersion} to installation folder...."
-    nsisunz::Unzip "${SLIMETEMP}\${JREDownloadedFileZip}" "${SLIMETEMP}\OpenJDK\"
-    Pop $0
-    DetailPrint "Unzipping finished with $0."
-
+# Todo: Make a better way to copy the jre folder, since the version number is in the folder name
     FindFirst $0 $1 "${SLIMETEMP}\OpenJDK\jdk-17.*-jre"
     loop:
         StrCmp $1 "" done
@@ -496,18 +487,7 @@ SectionEnd
 Section "SteamVR Driver" SEC_VRDRIVER
     SetOutPath $INSTDIR
 
-    DetailPrint "Downloading SteamVR Driver..."
-    NScurl::http GET "https://github.com/SlimeVR/SlimeVR-OpenVR-Driver/releases/latest/download/slimevr-openvr-driver-win64.zip" "${SLIMETEMP}\slimevr-openvr-driver-win64.zip" /CANCEL /RESUME /END
-    Pop $0 ; Status text ("OK" for success)
-    ${If} $0 != "OK"
-        Abort "Failed to download SteamVR Driver. Reason: $0."
-    ${EndIf}
-    DetailPrint "Downloaded!"
-
-    DetailPrint "Unpacking downloaded files..."
-    nsisunz::Unzip "${SLIMETEMP}\slimevr-openvr-driver-win64.zip" "${SLIMETEMP}\slimevr-openvr-driver-win64\"
-    Pop $0
-    DetailPrint "Unzipping finished with $0."
+    !insertmacro dlFiles "SteamVR Driver" "${SVRDriverVersion}" "${SVRDriverDownloadURL}" "${SVRDriverDownloadedFileZip}" "slimevr-openvr-driver-win64"
 
     # Include SteamVR powershell script to register/unregister driver
     File "steamvr.ps1"
@@ -531,18 +511,7 @@ SectionEnd
 Section "SlimeVR Feeder App" SEC_FEEDER_APP
     SetOutPath $INSTDIR
 
-    DetailPrint "Downloading SlimeVR Feeder App..."
-    NScurl::http GET "https://github.com/SlimeVR/SlimeVR-Feeder-App/releases/latest/download/SlimeVR-Feeder-App-win64.zip" "${SLIMETEMP}\SlimeVR-Feeder-App-win64.zip" /CANCEL /RESUME /END
-    Pop $0 ; Status text ("OK" for success)
-    ${If} $0 != "OK"
-        Abort "Failed to download SlimeVR Feeder App. Reason: $0."
-    ${EndIf}
-    DetailPrint "Downloaded!"
-
-    DetailPrint "Unpacking downloaded files..."
-    nsisunz::Unzip "${SLIMETEMP}\SlimeVR-Feeder-App-win64.zip" "${SLIMETEMP}"
-    Pop $0
-    DetailPrint "Unzipping finished with $0."
+    !insertmacro dlFiles "SlimeVR Feeder App" "${SVRFeederVersion}" "${SVRFeederDownloadURL}" "${SVRFeederDownloadedFileZip}" ""
 
     DetailPrint "Copying SlimeVR Feeder App..."
     CopyFiles /SILENT "${SLIMETEMP}\SlimeVR-Feeder-App-win64\*" "$INSTDIR\Feeder-App"
