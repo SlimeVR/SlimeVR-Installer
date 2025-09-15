@@ -35,7 +35,6 @@ Unicode True
 !define JREVersion "17.0.15+6"
 !define JREDownloadURL "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.15%2B6/OpenJDK17U-jre_x64_windows_hotspot_17.0.15_6.zip"
 !define JREDownloadedFileZip "OpenJDK17U-jre_x64_windows_hotspot_17.0.15_6.zip"
-Var JREneedInstall
 
 !define SVRServerVersion "latest"
 !define SVRServerDownloadURL "https://github.com/SlimeVR/SlimeVR-Server/releases/latest/download/SlimeVR-win64.zip"
@@ -49,6 +48,7 @@ Var JREneedInstall
 !define SVRFeederDownloadURL "https://github.com/SlimeVR/SlimeVR-Feeder-App/releases/latest/download/SlimeVR-Feeder-App-win64.zip"
 !define SVRFeederDownloadedFileZip "SlimeVR-Feeder-App-latest.zip"
 
+Var JREneedInstall
 Var /GLOBAL SteamVRResult
 Var /GLOBAL SteamVRLabelID
 Var /GLOBAL SteamVRLabelTxt
