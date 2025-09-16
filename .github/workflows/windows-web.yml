@@ -15,9 +15,9 @@ jobs:
 
     steps:
       - name: Install NSIS
-        uses: repolevedavaj/install-nsis@v1.0.3
-        with:
-          nsis-version: '3.11'
+        shell: cmd
+        run: |
+          choco install nsis --version 3.11.0
 
       - uses: actions/checkout@v2
         with:
