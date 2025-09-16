@@ -22,10 +22,6 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
-          
-      - name: Create plugins directory for NSIS
-        run: mkdir -p "${PLUGINS_DIR}" | cp -rl "${WINDOWS_WEB_DIR}/plugins"/*/* "${PLUGINS_DIR}/"
-        shell: bash
         
       - name: Create NSIS installer
         uses: joncloud/makensis-action@v5.0
