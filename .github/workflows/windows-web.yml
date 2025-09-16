@@ -11,7 +11,6 @@ jobs:
     env:
       # The directory of the web installer project
       WINDOWS_WEB_DIR: ${{ github.workspace }}/windows/web
-      PLUGINS_DIR: ${{ github.workspace }}/NSIS_Plugins
 
     steps:
       - name: Install NSIS
@@ -27,7 +26,6 @@ jobs:
         uses: joncloud/makensis-action@v5.0
         with:
           script-file: ${{ env.WINDOWS_WEB_DIR }}/slimevr_web_installer.nsi
-#          additional-plugin-paths: ${{ env.PLUGINS_DIR }}
 
       - name: Upload the installer as a build artifact
         uses: actions/upload-artifact@v4
