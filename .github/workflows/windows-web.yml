@@ -6,7 +6,7 @@ on: [ push, pull_request ]
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2025
     
     env:
       # The directory of the web installer project
@@ -14,6 +14,11 @@ jobs:
       PLUGINS_DIR: ${{ github.workspace }}/NSIS_Plugins
 
     steps:
+      - name: Install NSIS
+        uses: repolevedavaj/install-nsis@v1.0.3
+        with:
+          nsis-version: '3.11'
+
       - uses: actions/checkout@v2
         with:
           submodules: recursive
@@ -23,7 +28,7 @@ jobs:
         shell: bash
         
       - name: Create NSIS installer
-        uses: joncloud/makensis-action@v4
+        uses: joncloud/makensis-action@v5.0
         with:
           script-file: ${{ env.WINDOWS_WEB_DIR }}/slimevr_web_installer.nsi
           additional-plugin-paths: ${{ env.PLUGINS_DIR }}
