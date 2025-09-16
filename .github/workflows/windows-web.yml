@@ -27,7 +27,7 @@ jobs:
         uses: joncloud/makensis-action@v5.0
         with:
           script-file: ${{ env.WINDOWS_WEB_DIR }}/slimevr_web_installer.nsi
-          additional-plugin-paths: ${{ env.PLUGINS_DIR }}
+#          additional-plugin-paths: ${{ env.PLUGINS_DIR }}
 
       - name: Upload the installer as a build artifact
         uses: actions/upload-artifact@v4
