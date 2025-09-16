@@ -305,7 +305,8 @@ Function endPageLeave
     ${EndIf}
 
     ${If} $3 = 1
-        Exec "$INSTDIR\slimevr.exe"
+        # use explorer to open it so it inherits the user token and starts as normal user
+        Exec '"$WINDIR\explorer.exe" "$INSTDIR\slimevr.exe"'
     ${EndIf}
 
 FunctionEnd
