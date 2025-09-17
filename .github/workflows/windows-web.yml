@@ -6,19 +6,15 @@ on: [ push, pull_request ]
 
 jobs:
   build:
-    runs-on: windows-2025
+    runs-on: windows-2022
     
     env:
       # The directory of the web installer project
       WINDOWS_WEB_DIR: ${{ github.workspace }}/windows/web
 
     steps:
-      - name: Install NSIS
-        shell: cmd
-        run: |
-          choco install nsis --version 3.11.0
-
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
         with:
           submodules: recursive
         
