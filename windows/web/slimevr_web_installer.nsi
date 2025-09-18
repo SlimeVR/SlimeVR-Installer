@@ -23,6 +23,8 @@ Unicode True
 !include .\steamdetect.nsh
 !include .\dlmacro.nsh
 
+!define CSIDL_COMMON_DOCUMENTS 0x002E ; Define CSIDL_COMMON_DOCUMENTS if not already defined
+
 !define SF_USELECTED  0
 !define MUI_ICON "run.ico"
 !define MUI_HEADERIMAGE
@@ -63,6 +65,7 @@ Unicode True
 !define SVRFeederDLFileZip "SlimeVR-Feeder-App-latest.zip"
 
 Var JREneedInstall
+Var /GLOBAL PUBLIC
 Var /GLOBAL SteamVRResult
 Var /GLOBAL SteamVRLabelID
 Var /GLOBAL SteamVRLabelTxt
@@ -117,6 +120,13 @@ Function .onInit
         ReadRegStr $0 HKLM SOFTWARE\Valve\Steam InstallPath
     ${EndIf}
     StrCpy $STEAMDIR $0
+
+    ; Get "Public" user profile folder
+    StrCpy $0 ""
+    System::Call 'shell32::SHGetFolderPathW(i 0, i ${CSIDL_COMMON_DOCUMENTS}, i 0, i 0, t .r0)'
+    ${GetParent} $0 $0
+    StrCpy $PUBLIC $0
+
 FunctionEnd
 
 !insertmacro ProcessCheck "un." "SteamVRResult"
@@ -439,7 +449,7 @@ Section "SlimeVR Server" SEC_SERVER
     SetOutPath $INSTDIR
 
     !insertmacro dlFile "${SVRServerURLType}" "SlimeVR Server" "${SVRServerVersion}" "${SVRServerDLURL}" "${SVRServerDLFileZip}"
-    !insertmacro unzipFile "SlimeVR Server" "${SVRServerVersion}" "${SLIMETEMP}\${SVRServerDLFileZip}" "SlimeVR"
+    !insertmacro unzipFile "SlimeVR Server" "${SVRServerVersion}" "${SLIMETEMP}\${SVRServerDLFileZip}" "${SLIMETEMP}\SlimeVR"
 
     ${If} $SELECTED_INSTALLER_ACTION == "update"
         Delete "$INSTDIR\slimevr-ui.exe"
@@ -481,7 +491,7 @@ Section "Java JRE" SEC_JRE
     SectionIn RO
 
     !insertmacro dlFile "${JREURLType}" "Java JRE" "${JREVersion}" "${JREDLURL}" "${JREDLFileZip}"
-    !insertmacro unzipFile "Java JRE" "${JREVersion}" "${SLIMETEMP}\${JREDLFileZip}" "OpenJDK"
+    !insertmacro unzipFile "Java JRE" "${JREVersion}" "${SLIMETEMP}\${JREDLFileZip}" "${SLIMETEMP}\OpenJDK"
 
     # Make sure to delete all files on a update from jre, so if there is a new version no old files are left.
     IfFileExists "$INSTDIR\jre" 0 SEC_JRE_DIRNOTFOUND
@@ -504,13 +514,31 @@ Section "SteamVR Driver" SEC_VRDRIVER
     SetOutPath $INSTDIR
 
     !insertmacro dlFile "${SVRDriverURLType}" "SteamVR Driver" "${SVRDriverVersion}" "${SVRDriverDLURL}" "${SVRDriverDLFileZip}"
-    !insertmacro unzipFile "SteamVR Driver" "${SVRDriverVersion}" "${SLIMETEMP}\${SVRDriverDLFileZip}" "slimevr-openvr-driver-win64"
+    !insertmacro unzipFile "SteamVR Driver" "${SVRDriverVersion}" "${SLIMETEMP}\${SVRDriverDLFileZip}" "${SLIMETEMP}\slimevr-openvr-driver-win64"
 
     # Include SteamVR powershell script to register/unregister driver
     File "steamvr.ps1"
+    File "steamcleanexternaldrivers.ps1"
+
+    DetailPrint "Removing old external drivers in SteamVR Config..."
+    # If powershell is present - rely on automatic detection.
+
+    ${DisableX64FSRedirection}
+    CreateShortcut "$INSTDIR\steamcleanexternaldrivers.lnk" "$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" '-ExecutionPolicy Bypass -WindowStyle Hidden -File "$INSTDIR\steamcleanexternaldrivers.ps1"' "$INSTDIR\steamcleanexternaldrivers.ps1" 0
+    Exec "explorer.exe $INSTDIR\steamcleanexternaldrivers.lnk"
+    Sleep 5000
+    ${EnableX64FSRedirection}
+    IfFileExists "$PUBLIC\Documents\SlimeVRUninstall_log.txt" 0 no_log
+        FileOpen $1 "$PUBLIC\Documents\SlimeVRUninstall_log.txt" r
+        FileRead $1 $2
+        DetailPrint "$2"
+        FileClose $1
+        Delete "$PUBLIC\Documents\SlimeVRUninstall_log.txt"
+    no_log:
+    Delete "$INSTDIR\steamcleanexternaldrivers.lnk"
+    Delete "$INSTDIR\steamcleanexternaldrivers.ps1"
 
     DetailPrint "Copying SteamVR Driver to SteamVR..."
-    # If powershell is present - rely on automatic detection.
     ${DisableX64FSRedirection}
     nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Bypass -File "$INSTDIR\steamvr.ps1" -SteamPath "$STEAMDIR" -DriverPath "${SLIMETEMP}\slimevr-openvr-driver-win64\slimevr"' $0
     ${EnableX64FSRedirection}
@@ -530,7 +558,7 @@ Section "SlimeVR Feeder App" SEC_FEEDER_APP
 
     !insertmacro dlFile "${SVRFeederURLType}" "SlimeVR Feeder App" "${SVRFeederVersion}" "${SVRFeederDLURL}" "${SVRFeederDLFileZip}"
     # The zip contains a folder named SlimeVR-Feeder-App-win64
-    !insertmacro unzipFile "SlimeVR Feeder App" "${SVRFeederVersion}" "${SLIMETEMP}\${SVRFeederDLFileZip}" ""
+    !insertmacro unzipFile "SlimeVR Feeder App" "${SVRFeederVersion}" "${SLIMETEMP}\${SVRFeederDLFileZip}" "${SLIMETEMP}"
 
     DetailPrint "Copying SlimeVR Feeder App..."
     CopyFiles /SILENT "${SLIMETEMP}\SlimeVR-Feeder-App-win64\*" "$INSTDIR\Feeder-App"

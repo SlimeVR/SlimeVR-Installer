@@ -65,7 +65,7 @@
 !macro unzipFile name version local_file local_dir
 
     DetailPrint "Unzipping ${name} ${version} to installation folder...."
-    nsisunz::Unzip "${SLIMETEMP}\${local_file}" "${local_dir}"
+    nsisunz::Unzip "${local_file}" "${local_dir}"
     Pop $0
     DetailPrint "Unzipping finished with $0."
 
