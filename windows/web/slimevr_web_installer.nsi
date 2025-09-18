@@ -31,22 +31,36 @@ Unicode True
 !define MUI_HEADERIMAGE_RIGHT
 !define SLIMETEMP "$TEMP\SlimeVRInstaller"
 
+# Define all download URLs and versions here for easy editing
+!define MVCVersion ""
+!define MVCURLType "url" ; "url" or "local"
+!define MVCDLURL "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+!define MVCDLFileZip "vc_redist.x64.exe"
+
+!define WV2Version ""
+!define WV2URLType "url" ; "url" or "local"
+!define WV2DLURL "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
+!define WV2DLFileZip "MicrosoftEdgeWebView2RuntimeInstaller.exe"
 # Define the Java Version Strings and to Check (JRE\relase -> JAVA_RUNTIME_VERSION=)
 !define JREVersion "17.0.15+6"
-!define JREDownloadURL "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.15%2B6/OpenJDK17U-jre_x64_windows_hotspot_17.0.15_6.zip"
-!define JREDownloadedFileZip "OpenJDK17U-jre_x64_windows_hotspot_17.0.15_6.zip"
+!define JREURLType "url" ; "url" or "local"
+!define JREDLURL "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.15%2B6/OpenJDK17U-jre_x64_windows_hotspot_17.0.15_6.zip"
+!define JREDLFileZip "OpenJDK17U-jre_x64_windows_hotspot_17.0.15_6.zip"
 
 !define SVRServerVersion "latest"
-!define SVRServerDownloadURL "https://github.com/SlimeVR/SlimeVR-Server/releases/latest/download/SlimeVR-win64.zip"
-!define SVRServerDownloadedFileZip "SlimeVR-Server-latest.zip"
+!define SVRServerURLType "url" ; "url" or "local"
+!define SVRServerDLURL "https://github.com/SlimeVR/SlimeVR-Server/releases/latest/download/SlimeVR-win64.zip"
+!define SVRServerDLFileZip "SlimeVR-Server-latest.zip"
 
 !define SVRDriverVersion "latest"
-!define SVRDriverDownloadURL "https://github.com/SlimeVR/SlimeVR-OpenVR-Driver/releases/latest/download/slimevr-openvr-driver-win64.zip"
-!define SVRDriverDownloadedFileZip "slimevr-openvr-driver-win64.zip"
+!define SVRDriverURLType "url" ; "url" or "local"
+!define SVRDriverDLURL "https://github.com/SlimeVR/SlimeVR-OpenVR-Driver/releases/latest/download/slimevr-openvr-driver-win64.zip"
+!define SVRDriverDLFileZip "slimevr-openvr-driver-win64.zip"
 
 !define SVRFeederVersion "latest"
-!define SVRFeederDownloadURL "https://github.com/SlimeVR/SlimeVR-Feeder-App/releases/latest/download/SlimeVR-Feeder-App-win64.zip"
-!define SVRFeederDownloadedFileZip "SlimeVR-Feeder-App-latest.zip"
+!define SVRFeederURLType "url" ; "url" or "local"
+!define SVRFeederDLURL "https://github.com/SlimeVR/SlimeVR-Feeder-App/releases/latest/download/SlimeVR-Feeder-App-win64.zip"
+!define SVRFeederDLFileZip "SlimeVR-Feeder-App-latest.zip"
 
 Var JREneedInstall
 Var /GLOBAL SteamVRResult
@@ -424,7 +438,8 @@ Section "SlimeVR Server" SEC_SERVER
 
     SetOutPath $INSTDIR
 
-    !insertmacro dlFiles "SlimeVR Server" "${SVRServerVersion}" "${SVRServerDownloadURL}" "${SVRServerDownloadedFileZip}" "SlimeVR"
+    !insertmacro dlFile "${SVRServerURLType}" "SlimeVR Server" "${SVRServerVersion}" "${SVRServerDLURL}" "${SVRServerDLFileZip}"
+    !insertmacro unzipFile "SlimeVR Server" "${SVRServerVersion}" "${SLIMETEMP}\${SVRServerDLFileZip}" "SlimeVR"
 
     ${If} $SELECTED_INSTALLER_ACTION == "update"
         Delete "$INSTDIR\slimevr-ui.exe"
@@ -448,10 +463,9 @@ SectionEnd
 
 Section "Webview2" SEC_WEBVIEW
     SectionIn RO
-
     # Read Only protects it from Installing when it is not needed
-    DetailPrint "Downloading webview2!"
-    NScurl::http GET "https://go.microsoft.com/fwlink/p/?LinkId=2124703" "${SLIMETEMP}\MicrosoftEdgeWebView2RuntimeInstaller.exe" /CANCEL /RESUME /END
+
+    !insertmacro dlFile "${WV2URLType}" "webview2" "${WV2Version}" "${WV2DLURL}" "${WV2DLFileZip}"
 
     DetailPrint "Installing webview2!"
     nsExec::ExecToLog '"${SLIMETEMP}\MicrosoftEdgeWebView2RuntimeInstaller.exe" /silent /install' $0
@@ -465,8 +479,9 @@ SectionEnd
 
 Section "Java JRE" SEC_JRE
     SectionIn RO
-    
-    !insertmacro dlFiles "Java JRE" "${JREVersion}" "${JREDownloadURL}" "${JREDownloadedFileZip}" "OpenJDK"
+
+    !insertmacro dlFile "${JREURLType}" "Java JRE" "${JREVersion}" "${JREDLURL}" "${JREDLFileZip}"
+    !insertmacro unzipFile "Java JRE" "${JREVersion}" "${SLIMETEMP}\${JREDLFileZip}" "OpenJDK"
 
     # Make sure to delete all files on a update from jre, so if there is a new version no old files are left.
     IfFileExists "$INSTDIR\jre" 0 SEC_JRE_DIRNOTFOUND
@@ -488,7 +503,8 @@ SectionEnd
 Section "SteamVR Driver" SEC_VRDRIVER
     SetOutPath $INSTDIR
 
-    !insertmacro dlFiles "SteamVR Driver" "${SVRDriverVersion}" "${SVRDriverDownloadURL}" "${SVRDriverDownloadedFileZip}" "slimevr-openvr-driver-win64"
+    !insertmacro dlFile "${SVRDriverURLType}" "SteamVR Driver" "${SVRDriverVersion}" "${SVRDriverDLURL}" "${SVRDriverDLFileZip}"
+    !insertmacro unzipFile "SteamVR Driver" "${SVRDriverVersion}" "${SLIMETEMP}\${SVRDriverDLFileZip}" "slimevr-openvr-driver-win64"
 
     # Include SteamVR powershell script to register/unregister driver
     File "steamvr.ps1"
@@ -512,7 +528,9 @@ SectionEnd
 Section "SlimeVR Feeder App" SEC_FEEDER_APP
     SetOutPath $INSTDIR
 
-    !insertmacro dlFiles "SlimeVR Feeder App" "${SVRFeederVersion}" "${SVRFeederDownloadURL}" "${SVRFeederDownloadedFileZip}" ""
+    !insertmacro dlFile "${SVRFeederURLType}" "SlimeVR Feeder App" "${SVRFeederVersion}" "${SVRFeederDLURL}" "${SVRFeederDLFileZip}"
+    # The zip contains a folder named SlimeVR-Feeder-App-win64
+    !insertmacro unzipFile "SlimeVR Feeder App" "${SVRFeederVersion}" "${SLIMETEMP}\${SVRFeederDLFileZip}" ""
 
     DetailPrint "Copying SlimeVR Feeder App..."
     CopyFiles /SILENT "${SLIMETEMP}\SlimeVR-Feeder-App-win64\*" "$INSTDIR\Feeder-App"
@@ -523,13 +541,9 @@ SectionEnd
 
 Section "Microsoft Visual C++ Redistributable" SEC_MSVCPP
     SetOutPath $INSTDIR
-    DetailPrint "Downloading Microsoft Visual C++ Redistributable..."
-    NScurl::http GET "https://aka.ms/vs/17/release/vc_redist.x64.exe" "${SLIMETEMP}\vc_redist.x64.exe" /CANCEL /RESUME /END
-    Pop $0 ; Status text ("OK" for success)
-    ${If} $0 != "OK"
-        Abort "Failed to download Microsoft Visual C++ Redistributable. Reason: $0."
-    ${EndIf}
-    DetailPrint "Downloaded!"
+
+    !insertmacro dlFile "${MVCURLType}" "Microsoft Visual C++ Redistributable" "${MVCVersion}" "${MVCDLURL}" "${MVCDLFileZip}"
+
     DetailPrint "Installing Microsoft Visual C++ Redistributable..."
     nsExec::ExecToLog '"${SLIMETEMP}\vc_redist.x64.exe" /install /passive /norestart' $0
     Pop $0 ; Status text ("OK" for success)
