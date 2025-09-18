@@ -48,7 +48,7 @@
 ; Parameters:
 ;   name       - Friendly display name shown in the log (e.g., "Java JRE")
 ;   version    - Version label shown in the log (e.g., "17.0.15+6" or "latest")
-;   local_file - ZIP file name located under ${SLIMETEMP} (e.g., "archive.zip")
+;   local_file - ZIP file name located (e.g., "${SLIMETEMP}\archive.zip")
 ;   local_dir  - Destination directory name to extract into
 ;                (e.g., "${SLIMETEMP}\OpenJDK\" -> extracts to "${SLIMETEMP}\OpenJDK\...")
 ; Behavior:
@@ -56,7 +56,6 @@
 ;   - Calls Nsisunz plugin to unzip: nsisunz::Unzip "${local_file}" "${local_dir}"
 ;   - Pops plugin return value into $0 (status depends on plugin build)
 ; Requirements:
-;   - ${SLIMETEMP} must be defined and writable
 ;   - Nsisunz plugin must be available via !AddPluginDir
 ; Notes:
 ;   - This macro does not validate the unzip result; add checks after calling if needed.
@@ -67,6 +66,9 @@
     DetailPrint "Unzipping ${name} ${version} to installation folder...."
     nsisunz::Unzip "${local_file}" "${local_dir}"
     Pop $0
-    DetailPrint "Unzipping finished with $0."
+    StrCmp $0 "success" ok
+        Abort "Failed to unzip ${name} ${version}. Source: ${local_file} Target: ${local_dir} Reason: $0."
+    ok:
+    DetailPrint "Unzipped ${name} ${version}."
 
 !macroend
