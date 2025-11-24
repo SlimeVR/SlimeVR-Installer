@@ -36,7 +36,7 @@ Unicode True
 # Define all download URLs and versions here for easy editing
 !define MVCVersion ""
 !define MVCURLType "url" ; "url" or "local"
-!define MVCDLURL "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+!define MVCDLURL "https://aka.ms/vc14/vc_redist.x64.exe"
 !define MVCDLFileZip "vc_redist.x64.exe"
 
 !define WV2Version ""
