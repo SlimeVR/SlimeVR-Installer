@@ -44,10 +44,10 @@ Unicode True
 !define WV2DLURL "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
 !define WV2DLFileZip "MicrosoftEdgeWebView2RuntimeInstaller.exe"
 # Define the Java Version Strings and to Check (JRE\relase -> JAVA_RUNTIME_VERSION=)
-!define JREVersion "17.0.15+6"
+!define JREVersion "17.0.17+10"
 !define JREURLType "url" ; "url" or "local"
-!define JREDLURL "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.15%2B6/OpenJDK17U-jre_x64_windows_hotspot_17.0.15_6.zip"
-!define JREDLFileZip "OpenJDK17U-jre_x64_windows_hotspot_17.0.15_6.zip"
+!define JREDLURL "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.17%2B10/OpenJDK17U-jre_x64_windows_hotspot_17.0.17_10.zip"
+!define JREDLFileZip "OpenJDK17U-jre_x64_windows_hotspot_17.0.17_10.zip"
 
 !define SVRServerVersion "latest"
 !define SVRServerURLType "url" ; "url" or "local"
