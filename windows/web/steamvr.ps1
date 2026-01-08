@@ -10,32 +10,42 @@ $ErrorActionPreference = 'Stop'
 # Required for System.Web.Script.Serialization.JavaScriptSerializer
 [void][System.Reflection.Assembly]::LoadWithPartialName("System.Web.Extensions")
 
-# Prune external SlimeVR driver(s)
-$OpenVrConfigPath = "$env:LOCALAPPDATA\openvr\openvrpaths.vrpath"
-$OpenVrConfig = Get-Content -Path $OpenVrConfigPath -Encoding utf8 | Out-String | ConvertFrom-Json
-Write-Host "Checking `"$OpenVrConfigPath`" for SlimeVR Drivers..."
-$ExternalDriverPaths = @()
-if ($OpenVrConfig.external_drivers -and $OpenVrConfig.external_drivers.Length) {
-    foreach ($ExternalDriverPath in $OpenVrConfig.external_drivers) {
-        if (-not (Test-Path -Path "$ExternalDriverPath\driver.vrdrivermanifest")) {
-            Write-Host "VR driver path `"$ExternalDriverPath`" has no manifest."
-            $ExternalDriverPaths += $ExternalDriverPath
-            continue
-        }
-        $DriverManifest = Get-Content -Path "$ExternalDriverPath\driver.vrdrivermanifest" -Encoding utf8 | Out-String | ConvertFrom-Json
-        if ($DriverManifest.name -eq "SlimeVR") {
-            Write-Host "Found external SlimeVR Driver in `"$ExternalDriverPath`". Removing..."
-            continue
-        }
-        $ExternalDriverPaths += $ExternalDriverPath
-    }
-}
-if ($ExternalDriverPaths.Length -eq 0) {
-    $OpenVrConfig.external_drivers = $null
-} else {
-    $OpenVrConfig.external_drivers = $ExternalDriverPaths
-}
-[System.IO.File]::WriteAllLines($OpenVrConfigPath, (ConvertTo-Json -InputObject $OpenVrConfig -Compress))
+# TODO: Remove the Prune external SlimeVR driver(s) part once its sure everything with 
+#       steamcleanexternaldrivers.ps1 is working fine without it.
+#       This part was used to remove old SlimeVR drivers from the OpenVR config.
+#       The Installation methode is not used for ~3 years now, so it should be safe to remove it.
+## Prune external SlimeVR driver(s)
+
+#$OpenVrConfigPath = "$env:LOCALAPPDATA\openvr\openvrpaths.vrpath"
+## Check if the path exists to avoid errors. If the file does not exist we don't need to remove anything.
+#if (Test-Path -Path $OpenVrConfigPath) {
+#    $OpenVrConfig = Get-Content -Path $OpenVrConfigPath -Encoding utf8 | Out-String | ConvertFrom-Json
+#    Write-Host "Checking External Drivers in '$OpenVrConfigPath' for old SlimeVR Drivers..."
+#    $ExternalDriverPaths = @()
+#    if ($OpenVrConfig.external_drivers -and $OpenVrConfig.external_drivers.Length) {
+#        foreach ($ExternalDriverPath in $OpenVrConfig.external_drivers) {
+#            if (-not (Test-Path -Path "$ExternalDriverPath\driver.vrdrivermanifest")) {
+#                Write-Host "VR driver path `"$ExternalDriverPath`" has no manifest."
+#                $ExternalDriverPaths += $ExternalDriverPath
+#                continue
+#            }
+#            $DriverManifest = Get-Content -Path "$ExternalDriverPath\driver.vrdrivermanifest" -Encoding utf8 | Out-String | ConvertFrom-Json
+#            if ($DriverManifest.name -eq "SlimeVR") {
+#                Write-Host "Found external SlimeVR Driver in `"$ExternalDriverPath`". Removing..."
+#                continue
+#            }
+#            $ExternalDriverPaths += $ExternalDriverPath
+#        }
+#    }
+#    if ($ExternalDriverPaths.Length -eq 0) {
+#        $OpenVrConfig.external_drivers = $null
+#    } else {
+#        $OpenVrConfig.external_drivers = $ExternalDriverPaths
+#    }
+#    [System.IO.File]::WriteAllLines($OpenVrConfigPath, (ConvertTo-Json -InputObject $OpenVrConfig -Compress))
+#} else {
+#    Write-Host "OpenVR config not found at `"$OpenVrConfigPath`". Skipping external driver prune."
+#}
 
 # Remove trackers on uninstall
 if ($Uninstall -eq $true) {
@@ -89,9 +99,10 @@ foreach ($SteamVrPath in $SteamVrPaths) {
             exit 0
         }
         try {
-            Copy-Item -Recurse -Force -Path $DriverPath -Destination "$SteamVrPath\drivers"
+            Copy-Item -Recurse -Force -Path $DriverPath -Destination "$SteamVrPath\drivers\"
         } catch [System.Management.Automation.ActionPreferenceStopException] {
-            Write-Host "Failed to remove old SlimeVR driver. Make sure SteamVR is closed and there's enough free disk space."
+            Write-Host "Failed to copy new SlimeVR driver. Error: $_"
+            Write-Host "Make sure SteamVR is closed and there's enough free disk space."
             exit 1
         }
         Write-Host "Installed SlimeVR Driver to `"$SteamVrDriverPath`""

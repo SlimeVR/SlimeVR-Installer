@@ -6,27 +6,22 @@ on: [ push, pull_request ]
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2022
     
     env:
       # The directory of the web installer project
       WINDOWS_WEB_DIR: ${{ github.workspace }}/windows/web
-      PLUGINS_DIR: ${{ github.workspace }}/NSIS_Plugins
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v5
         with:
           submodules: recursive
-          
-      - name: Create plugins directory for NSIS
-        run: mkdir -p "${PLUGINS_DIR}" | cp -rl "${WINDOWS_WEB_DIR}/plugins"/*/* "${PLUGINS_DIR}/"
-        shell: bash
         
       - name: Create NSIS installer
-        uses: joncloud/makensis-action@v4
+        uses: joncloud/makensis-action@v5.0
         with:
           script-file: ${{ env.WINDOWS_WEB_DIR }}/slimevr_web_installer.nsi
-          additional-plugin-paths: ${{ env.PLUGINS_DIR }}
 
       - name: Upload the installer as a build artifact
         uses: actions/upload-artifact@v4
