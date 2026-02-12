@@ -2,31 +2,38 @@
 
 name: SlimeVR Windows Web Installer
 
-on: [ push, pull_request ]
+on: [ push, pull_request, workflow_dispatch ]
 
 jobs:
   build:
     runs-on: windows-2022
-    
+
     env:
       # The directory of the web installer project
       WINDOWS_WEB_DIR: ${{ github.workspace }}/windows/web
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: recursive
-        
       - name: Create NSIS installer
         uses: joncloud/makensis-action@v5.0
         with:
           script-file: ${{ env.WINDOWS_WEB_DIR }}/slimevr_web_installer.nsi
 
       - name: Upload the installer as a build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           # Artifact name
           name: "slimevr_web_installer" # optional, default is artifact
           # A file, directory or wildcard pattern that describes what to upload
           path: ${{ env.WINDOWS_WEB_DIR }}/slimevr_web_installer.exe
+
+      - name: Upload to draft release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          draft: true
+          generate_release_notes: true
+          files: "${{ env.WINDOWS_WEB_DIR }}/slimevr_web_installer.exe"
