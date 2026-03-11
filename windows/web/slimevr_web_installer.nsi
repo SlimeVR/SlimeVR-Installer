@@ -39,10 +39,6 @@ Unicode True
 !define MVCDLURL "https://aka.ms/vc14/vc_redist.x64.exe"
 !define MVCDLFileZip "vc_redist.x64.exe"
 
-!define WV2Version ""
-!define WV2URLType "url" ; "url" or "local"
-!define WV2DLURL "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
-!define WV2DLFileZip "MicrosoftEdgeWebView2RuntimeInstaller.exe"
 # Define the Java Version Strings and to Check (JRE\relase -> JAVA_RUNTIME_VERSION=)
 !define JREVersion "17.0.17+10"
 !define JREURLType "url" ; "url" or "local"
@@ -89,7 +85,7 @@ InstallDir "$PROGRAMFILES\SlimeVR Server" ; $InstDir default value. Defaults to 
 ShowInstDetails show
 ShowUninstDetails show
 
-BrandingText "SlimeVR Installer 3.0.0"
+BrandingText "SlimeVR Installer 4.0.0"
 
 # Admin rights are required for:
 # 1. Removing Start Menu shortcut in Windows 7+
@@ -149,7 +145,7 @@ FunctionEnd
 
 Function .onInstFailed
     ${If} $SELECTED_INSTALLER_ACTION == ""
-        Call cleanInstDir
+        RMDir /r $INSTDIR
     ${Endif}
 FunctionEnd
 
@@ -157,28 +153,6 @@ Function .onGUIEnd
     Call cleanTemp
 FunctionEnd
 
-Function cleanInstDir
-    Delete "$INSTDIR\uninstall.exe"
-    Delete "$INSTDIR\run.bat"
-    Delete "$INSTDIR\run.ico"
-    Delete "$INSTDIR\slimevr*"
-    Delete "$INSTDIR\firewall*.bat"
-    Delete "$INSTDIR\MagnetoLib.dll"
-    Delete "$INSTDIR\steamvr.ps1"
-    Delete "$INSTDIR\log*"
-    Delete "$INSTDIR\*.log"
-    Delete "$INSTDIR\*.lck"
-    Delete "$INSTDIR\vrconfig.yml"
-    Delete "$INSTDIR\LICENSE*"
-
-    RMDir /r "$INSTDIR\Recordings"
-    RMdir /r "$INSTDIR\jre"
-    RMdir /r "$INSTDIR\driver"
-    RMDir /r "$INSTDIR\logs"
-    RMdir /r "$INSTDIR\Feeder-App"
-
-    RMDir $INSTDIR
-FunctionEnd
 # Init functions end #
 
 Page Custom startPage startPageLeave
@@ -311,7 +285,7 @@ Function endPageLeave
     ${If} $0 = 1
         CreateDirectory "$SMPROGRAMS\SlimeVR Server"
         CreateShortcut "$SMPROGRAMS\SlimeVR Server\Uninstall SlimeVR Server.lnk" "$INSTDIR\uninstall.exe"
-        CreateShortcut "$SMPROGRAMS\SlimeVR Server\SlimeVR Server.lnk" "$INSTDIR\slimevr.exe" ""
+        CreateShortcut "$SMPROGRAMS\SlimeVR Server\SlimeVR Server.lnk" "$INSTDIR\SlimeVR.exe" ""
     ${Else}
         Delete "$SMPROGRAMS\Uninstall SlimeVR Server.lnk"
         Delete "$SMPROGRAMS\SlimeVR Server.lnk"
@@ -319,7 +293,7 @@ Function endPageLeave
     ${Endif}
 
     ${If} $1 = 1
-        CreateShortcut "$DESKTOP\SlimeVR Server.lnk" "$INSTDIR\slimevr.exe" ""
+        CreateShortcut "$DESKTOP\SlimeVR Server.lnk" "$INSTDIR\SlimeVR.exe" ""
     ${Else}
         Delete "$DESKTOP\SlimeVR Server.lnk"
     ${EndIf}
@@ -330,7 +304,7 @@ Function endPageLeave
 
     ${If} $3 = 1
         # use explorer to open it so it inherits the user token and starts as normal user
-        Exec '"$WINDIR\explorer.exe" "$INSTDIR\slimevr.exe"'
+        Exec '"$WINDIR\explorer.exe" "$INSTDIR\SlimeVR.exe"'
     ${EndIf}
 
 FunctionEnd
@@ -449,42 +423,19 @@ Section "SlimeVR Server" SEC_SERVER
     SetOutPath $INSTDIR
 
     !insertmacro dlFile "${SVRServerURLType}" "SlimeVR Server" "${SVRServerVersion}" "${SVRServerDLURL}" "${SVRServerDLFileZip}"
+
+    CreateDirectory "${SLIMETEMP}\SlimeVR"
     !insertmacro unzipFile "SlimeVR Server" "${SVRServerVersion}" "${SLIMETEMP}\${SVRServerDLFileZip}" "${SLIMETEMP}\SlimeVR"
 
-    ${If} $SELECTED_INSTALLER_ACTION == "update"
-        Delete "$INSTDIR\slimevr-ui.exe"
-    ${EndIf}
-
     DetailPrint "Copying SlimeVR Server to installation folder..."
-    CopyFiles /SILENT "${SLIMETEMP}\SlimeVR\SlimeVR\*" $INSTDIR
-
-    IfFileExists "$INSTDIR\slimevr-ui.exe" found not_found
-    found:
-        Delete "$INSTDIR\slimevr.exe"
-        Rename "$INSTDIR\slimevr-ui.exe" "$INSTDIR\slimevr.exe"
-    not_found:
+    CopyFiles /SILENT "${SLIMETEMP}\SlimeVR\*" $INSTDIR
 
     Delete "$INSTDIR\run.bat"
+    Delete "$INSTDIR\slimevr-ui.exe"
     Delete "$INSTDIR\run.ico"
     
     # Create the uninstaller
     WriteUninstaller "$INSTDIR\uninstall.exe"
-SectionEnd
-
-Section "Webview2" SEC_WEBVIEW
-    SectionIn RO
-    # Read Only protects it from Installing when it is not needed
-
-    !insertmacro dlFile "${WV2URLType}" "webview2" "${WV2Version}" "${WV2DLURL}" "${WV2DLFileZip}"
-
-    DetailPrint "Installing webview2!"
-    nsExec::ExecToLog '"${SLIMETEMP}\MicrosoftEdgeWebView2RuntimeInstaller.exe" /silent /install' $0
-    Pop $0
-    DetailPrint "Installing finished with $0."
-    ${If} $0 != 0
-        Abort "Failed to install webview 2"
-    ${EndIf}
-
 SectionEnd
 
 Section "Java JRE" SEC_JRE
@@ -682,7 +633,7 @@ Section "-" SEC_REGISTERAPP
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
                     "UninstallString" '"$INSTDIR\uninstall.exe"'
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
-                    "DisplayIcon" "$INSTDIR\slimevr.exe"
+                    "DisplayIcon" "$INSTDIR\SlimeVR.exe"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
                     "HelpLink" "https://docs.slimevr.dev/"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\SlimeVR" \
@@ -713,7 +664,6 @@ Function componentsPre
     ${If} $SELECTED_INSTALLER_ACTION == "update"
         SectionSetFlags ${SEC_FIREWALL} ${SF_SELECTED}
         SectionSetFlags ${SEC_REGISTERAPP} 0
-        SectionSetFlags ${SEC_WEBVIEW} ${SF_SELECTED}
         SectionSetFlags ${SEC_MSVCPP} ${SF_SELECTED}
         SectionSetFlags ${SEC_USBDRIVERS} ${SF_SECGRP}
         SectionSetFlags ${SEC_SERVER} ${SF_SELECTED}
@@ -738,18 +688,6 @@ Function componentsPre
         SectionSetFlags ${SEC_JRE} ${SF_USELECTED}
     ${EndIf}
 
-    # Detect WebView2
-    # https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution#detect-if-a-suitable-webview2-runtime-is-already-installed
-    # Trying to solve #41 Installer doesn't always install WebView2
-    # Ignoring only user installed WebView2 it seems to make problems
-    ${If} ${RunningX64}
-        ReadRegStr $0 HKLM "SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
-        ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
-    ${Else}
-        ReadRegStr $0 HKLM "SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
-        ReadRegStr $1 HKCU "Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
-    ${EndIf}
-
     ${If} $0 == ""
     ${OrIf} $0 == "0.0.0.0"
         StrCpy $0 ""
@@ -764,12 +702,6 @@ Function componentsPre
         StrCpy $1 "1"
     ${EndIf}
 
-    ${If} $0 == ""
-    ${AndIf} $1 == ""
-        SectionSetFlags ${SEC_WEBVIEW} ${SF_SELECTED}|${SF_RO}
-    ${Else}
-        SectionSetFlags ${SEC_WEBVIEW} ${SF_USELECTED}
-    ${EndIf}
 FunctionEnd
 
 Function .onSelChange
@@ -792,23 +724,9 @@ Section "-un.SlimeVR Server" un.SEC_SERVER
     Delete "$SMPROGRAMS\Uninstall SlimeVR Server.lnk"
     Delete "$SMPROGRAMS\SlimeVR Server.lnk"
     Delete "$DESKTOP\SlimeVR Server.lnk"
-    Delete "$INSTDIR\slimevr-ui.exe"
-    Delete "$INSTDIR\run.bat"
-    Delete "$INSTDIR\run.ico"
     # Ignore errors on the files above, they are optional to remove and may not even exist
     ClearErrors
-    Delete "$INSTDIR\slimevr*"
-    Delete "$INSTDIR\MagnetoLib.dll"
-    Delete "$INSTDIR\log*"
-    Delete "$INSTDIR\*.log"
-    Delete "$INSTDIR\*.lck"
-    Delete "$INSTDIR\vrconfig.yml"
-    Delete "$INSTDIR\LICENSE*"
-    Delete "$INSTDIR\ThirdPartyNotices.txt"
-
-    RMDir /r "$INSTDIR\Recordings"
-    RMdir /r "$INSTDIR\jre"
-    RMDir /r "$INSTDIR\logs"
+    RMDir /r $INSTDIR
 
     IfErrors fail success
     fail:
@@ -854,7 +772,6 @@ SectionEnd
 
 LangString DESC_SEC_SERVER ${LANG_ENGLISH} "Installs latest SlimeVR Server."
 LangString DESC_SEC_JRE ${LANG_ENGLISH} "Downloads and copies Java JRE 17 to installation folder. Required for SlimeVR Server."
-LangString DESC_SEC_WEBVIEW ${LANG_ENGLISH} "Downloads and install Webview2 if not already installed. Required for the SlimeVR GUI"
 LangString DESC_SEC_VRDRIVER ${LANG_ENGLISH} "Installs latest SteamVR Driver for SlimeVR."
 LangString DESC_SEC_USBDRIVERS ${LANG_ENGLISH} "A list of USB drivers that are used by various boards."
 LangString DESC_SEC_FEEDER_APP ${LANG_ENGLISH} "Installs SlimeVR Feeder App that sends position of SteamVR trackers (Vive trackers, controllers) to SlimeVR Server. Required for elbow tracking."
@@ -870,7 +787,6 @@ LangString DESC_PROCESS_ERROR ${LANG_ENGLISH} "An error happend while trying for
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_SERVER} $(DESC_SEC_SERVER)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_JRE} $(DESC_SEC_JRE)
-    !insertmacro MUI_DESCRIPTION_TEXT ${SEC_WEBVIEW} $(DESC_SEC_WEBVIEW)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_VRDRIVER} $(DESC_SEC_VRDRIVER)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_FEEDER_APP} $(DESC_SEC_FEEDER_APP)
     !insertmacro MUI_DESCRIPTION_TEXT ${SEC_MSVCPP} $(DESC_SEC_MSVCPP)
