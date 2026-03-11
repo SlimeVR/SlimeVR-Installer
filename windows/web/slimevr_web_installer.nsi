@@ -304,7 +304,7 @@ Function endPageLeave
 
     ${If} $3 = 1
         # use explorer to open it so it inherits the user token and starts as normal user
-        Exec '"$WINDIR\explorer.exe" "$INSTDIR\SlimeVR.exe"'
+        ShellExecAsUser::ShellExec "open" "$INSTDIR\SlimeVR.exe"
     ${EndIf}
 
 FunctionEnd
@@ -430,9 +430,15 @@ Section "SlimeVR Server" SEC_SERVER
     DetailPrint "Copying SlimeVR Server to installation folder..."
     CopyFiles /SILENT "${SLIMETEMP}\SlimeVR\*" $INSTDIR
 
-    Delete "$INSTDIR\run.bat"
-    Delete "$INSTDIR\slimevr-ui.exe"
-    Delete "$INSTDIR\run.ico"
+    ${If} $SELECTED_INSTALLER_ACTION == "update"
+        IfFileExists "$LOCALAPPDATA\dev.slimevr.SlimeVR" 0 SEC_TAURI_DIRNOTFOUND
+            RMDir /r "$LOCALAPPDATA\dev.slimevr.SlimeVR"
+        SEC_TAURI_DIRNOTFOUND:
+        
+        IfFileExists "$APPDATA\dev.slimevr.SlimeVR\electron" 0 SEC_ELECTON_DIRNOTFOUND
+            RMDir /r "$APPDATA\dev.slimevr.SlimeVR\electron"
+        SEC_ELECTON_DIRNOTFOUND:
+    ${EndIf}
     
     # Create the uninstaller
     WriteUninstaller "$INSTDIR\uninstall.exe"
@@ -724,6 +730,8 @@ Section "-un.SlimeVR Server" un.SEC_SERVER
     Delete "$SMPROGRAMS\Uninstall SlimeVR Server.lnk"
     Delete "$SMPROGRAMS\SlimeVR Server.lnk"
     Delete "$DESKTOP\SlimeVR Server.lnk"
+    RMDir /r "$LOCALAPPDATA\dev.slimevr.SlimeVR"
+    RMDir /r "$APPDATA\dev.slimevr.SlimeVR\electron"
     # Ignore errors on the files above, they are optional to remove and may not even exist
     ClearErrors
     RMDir /r $INSTDIR
