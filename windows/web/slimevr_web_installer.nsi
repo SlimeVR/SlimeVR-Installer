@@ -304,7 +304,7 @@ Function endPageLeave
 
     ${If} $3 = 1
         # use explorer to open it so it inherits the user token and starts as normal user
-        ; ShellExecAsUser::ShellExec "open" "$INSTDIR\SlimeVR.exe"
+        Exec '"$WINDIR\explorer.exe" "$INSTDIR\SlimeVR.exe"'
     ${EndIf}
 
 FunctionEnd
