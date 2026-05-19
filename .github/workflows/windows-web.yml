@@ -23,7 +23,7 @@ jobs:
           script-file: ${{ env.WINDOWS_WEB_DIR }}/slimevr_web_installer.nsi
 
       - name: Upload the installer as a build artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           # Artifact name
           name: "slimevr_web_installer" # optional, default is artifact
