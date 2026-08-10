@@ -42,12 +42,12 @@ Unicode True
 # Define the Java Version Strings and to Check (JRE\relase -> JAVA_RUNTIME_VERSION=)
 !define JREVersion "17.0.17+10"
 !define JREURLType "url" ; "url" or "local"
-!define JREDLURL "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.17%2B10/OpenJDK17U-jre_x64_windows_hotspot_17.0.17_10.zip"
-!define JREDLFileZip "OpenJDK17U-jre_x64_windows_hotspot_17.0.17_10.zip"
+!define JREDLURL "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.4%2B7/OpenJDK25U-jdk_x64_windows_hotspot_25.0.4_7.zip"
+!define JREDLFileZip "OpenJDK25U-jdk_x64_windows_hotspot_25.0.4_7.zip"
 
-!define SVRServerVersion "latest"
+!define SVRServerVersion "server-rewrite"
 !define SVRServerURLType "url" ; "url" or "local"
-!define SVRServerDLURL "https://github.com/SlimeVR/SlimeVR-Server/releases/latest/download/SlimeVR-win64.zip"
+!define SVRServerDLURL "https://github.com/SlimeVR/SlimeVR-Server/releases/download/server-rewrite/SlimeVR-win64.zip"
 !define SVRServerDLFileZip "SlimeVR-Server-latest.zip"
 
 !define SVRDriverVersion "latest"
@@ -468,7 +468,7 @@ Section "Java JRE" SEC_JRE
         CreateDirectory "$INSTDIR\jre"
     SEC_JRE_DIRNOTFOUND:
 # Todo: Make a better way to copy the jre folder, since the version number is in the folder name
-    FindFirst $0 $1 "${SLIMETEMP}\OpenJDK\jdk-17.*-jre"
+    FindFirst $0 $1 "${SLIMETEMP}\OpenJDK\jdk-25.*-jre"
     loop:
         StrCmp $1 "" done
         CopyFiles /SILENT "${SLIMETEMP}\OpenJDK\$1\*" "$INSTDIR\jre"
