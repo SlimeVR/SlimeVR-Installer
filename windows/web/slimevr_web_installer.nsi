@@ -45,9 +45,9 @@ Unicode True
 !define JREDLURL "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.4%2B7/OpenJDK25U-jdk_x64_windows_hotspot_25.0.4_7.zip"
 !define JREDLFileZip "OpenJDK25U-jdk_x64_windows_hotspot_25.0.4_7.zip"
 
-!define SVRServerVersion "server-rewrite"
+!define SVRServerVersion "v22.0.0-rc.1"
 !define SVRServerURLType "url" ; "url" or "local"
-!define SVRServerDLURL "https://github.com/SlimeVR/SlimeVR-Server/releases/download/server-rewrite/SlimeVR-win64.zip"
+!define SVRServerDLURL "https://github.com/SlimeVR/SlimeVR-Server/releases/download/v22.0.0-rc.1/SlimeVR-win64.zip"
 !define SVRServerDLFileZip "SlimeVR-Server-latest.zip"
 
 !define SVRDriverVersion "latest"
