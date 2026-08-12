@@ -40,7 +40,7 @@ Unicode True
 !define MVCDLFileZip "vc_redist.x64.exe"
 
 # Define the Java Version Strings and to Check (JRE\relase -> JAVA_RUNTIME_VERSION=)
-!define JREVersion "17.0.17+10"
+!define JREVersion "25.0.4_7"
 !define JREURLType "url" ; "url" or "local"
 !define JREDLURL "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.4%2B7/OpenJDK25U-jdk_x64_windows_hotspot_25.0.4_7.zip"
 !define JREDLFileZip "OpenJDK25U-jdk_x64_windows_hotspot_25.0.4_7.zip"
@@ -764,7 +764,7 @@ Section "-un." un.SEC_POST_UNINSTALL
 SectionEnd
 
 LangString DESC_SEC_SERVER ${LANG_ENGLISH} "Installs latest SlimeVR Server."
-LangString DESC_SEC_JRE ${LANG_ENGLISH} "Downloads and copies Java JRE 17 to installation folder. Required for SlimeVR Server."
+LangString DESC_SEC_JRE ${LANG_ENGLISH} "Downloads and copies Java JRE 25 to installation folder. Required for SlimeVR Server."
 LangString DESC_SEC_VRDRIVER ${LANG_ENGLISH} "Installs latest SteamVR Driver for SlimeVR."
 LangString DESC_SEC_USBDRIVERS ${LANG_ENGLISH} "A list of USB drivers that are used by various boards."
 LangString DESC_SEC_MSVCPP ${LANG_ENGLISH} "Installs the latest Microsoft Visual C++ Redistributable Version (required by the SteamVR Driver)"
