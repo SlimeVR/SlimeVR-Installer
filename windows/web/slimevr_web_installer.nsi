@@ -468,7 +468,7 @@ Section "Java JRE" SEC_JRE
         CreateDirectory "$INSTDIR\jre"
     SEC_JRE_DIRNOTFOUND:
 # Todo: Make a better way to copy the jre folder, since the version number is in the folder name
-    FindFirst $0 $1 "${SLIMETEMP}\OpenJDK\jdk-25.*-jre"
+    FindFirst $0 $1 "${SLIMETEMP}\OpenJDK\jdk-25.*"
     loop:
         StrCmp $1 "" done
         CopyFiles /SILENT "${SLIMETEMP}\OpenJDK\$1\*" "$INSTDIR\jre"
