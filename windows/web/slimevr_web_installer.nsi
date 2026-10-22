@@ -47,7 +47,7 @@ Unicode True
 
 !define SVRServerVersion "v22.0.0-rc.1"
 !define SVRServerURLType "url" ; "url" or "local"
-!define SVRServerDLURL "https://github.com/SlimeVR/SlimeVR-Server/releases/download/v22.0.0-rc.1/SlimeVR-win64.zip"
+!define SVRServerDLURL "https://github.com/SlimeVR/SlimeVR-Server/releases/download/v22.0.0-rc.2/SlimeVR-win64.zip"
 !define SVRServerDLFileZip "SlimeVR-Server-latest.zip"
 
 !define SVRDriverVersion "v7.0.0-rc.1"
