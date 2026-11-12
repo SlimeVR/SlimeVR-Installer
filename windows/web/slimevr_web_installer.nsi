@@ -45,14 +45,14 @@ Unicode True
 !define JREDLURL "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.4%2B7/OpenJDK25U-jre_x64_windows_hotspot_25.0.4_7.zip"
 !define JREDLFileZip "OpenJDK25U-jre_x64_windows_hotspot_25.0.4_7.zip"
 
-!define SVRServerVersion "v22.0.0-rc.3"
+!define SVRServerVersion "v22.0.0-rc.4"
 !define SVRServerURLType "url" ; "url" or "local"
-!define SVRServerDLURL "https://github.com/SlimeVR/SlimeVR-Server/releases/download/v22.0.0-rc.3/SlimeVR-win64.zip"
+!define SVRServerDLURL "https://github.com/SlimeVR/SlimeVR-Server/releases/download/v22.0.0-rc.4/SlimeVR-win64.zip"
 !define SVRServerDLFileZip "SlimeVR-Server-latest.zip"
 
-!define SVRDriverVersion "v7.0.0-rc.1"
+!define SVRDriverVersion "v7.0.0-rc.2"
 !define SVRDriverURLType "url" ; "url" or "local"
-!define SVRDriverDLURL "https://github.com/SlimeVR/SlimeVR-OpenVR-Driver/releases/download/v7.0.0-rc.1/slimevr-openvr-driver-win64.zip"
+!define SVRDriverDLURL "https://github.com/SlimeVR/SlimeVR-OpenVR-Driver/releases/download/v7.0.0-rc.2/slimevr-openvr-driver-win64.zip"
 !define SVRDriverDLFileZip "slimevr-openvr-driver-win64.zip"
 
 SetCompressor lzma
