@@ -16,12 +16,31 @@
 !macro dlFile source_type name version url_or_path local_file
     !if "${source_type}" == "url"
         DetailPrint "Downloading ${name} ${version}..."
-        NScurl::http GET "${url_or_path}" "${SLIMETEMP}\${local_file}" /CANCEL /RESUME /END
-        Pop $0 ; Status text ("OK" for success)
-        ${If} $0 != "OK"
-            Abort "Failed to download ${name} ${version}. Reason: $0."
-        ${EndIf}
-        DetailPrint "Downloaded!"
+        
+        Push $R0 ; Retry counter
+        StrCpy $R0 0
+
+        download_retry:
+            IntOp $R0 $R0 + 1
+            NScurl::http GET "${url_or_path}" "${SLIMETEMP}\${local_file}" /CANCEL /RESUME /END
+            Pop $0 ; Status text ("OK" for success)
+            
+            ${If} $0 == "OK"
+                Goto download_success
+            ${EndIf}
+
+            ${If} $R0 < 3
+                DetailPrint "Download attempt $R0 failed ($0). Retrying in 3 seconds..."
+                Sleep 3000
+                Goto download_retry
+            ${EndIf}
+
+            Pop $R0
+            Abort "Failed to download ${name} ${version} after 3 attempts. Last reason: $0."
+
+        download_success:
+            Pop $R0
+            DetailPrint "Downloaded!"
     !else
         !if "${source_type}" == "local"
             DetailPrint "Using bundled ${name} ${version}..."
